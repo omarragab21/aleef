@@ -9,7 +9,7 @@ void main() async {
     EasyLocalization(
       supportedLocales: [Locale('en'), Locale('ar')],
       path: 'assets/translations', // مسار ملفات الترجمة
-      fallbackLocale: Locale('en'),
+      fallbackLocale: Locale('ar'),
       child: MyApp(),
     ),
   );
