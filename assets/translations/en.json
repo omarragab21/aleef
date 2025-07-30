@@ -1,4 +1,4 @@
-[
+
   {
     "start_with_aleef": "Start with Aleef",
     "track_pet_health": "Track your pet's health status.",
@@ -7,7 +7,9 @@
     "choose_doctor_video": "Choose the right doctor, stay connected via video, and keep track of your pet’s vaccination and treatment schedules.",
     "shop_pet_supplies": "Shop pet supplies online",
     "shop_from_top_stores": "Shop from top stores and receive your order safely at your doorstep.",
-    "account_type_login_as": "Account type, login as",
+    "account_type": "Account type",
+    "login_as":" Login as",
+    "start_now":"Start Now",
     "user": "User",
     "service_provider": "Service Provider",
     "vet": "Veterinarian",
@@ -46,4 +48,3 @@
     "upload_pdf_or_image": "Upload a PDF file or image",
     "login_as_seller": "Login as Seller"
   }
-] 
