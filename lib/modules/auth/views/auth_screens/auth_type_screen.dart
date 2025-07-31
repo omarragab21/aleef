@@ -1,4 +1,6 @@
 import 'package:aleef/modules/auth/views/auth_screens/service_provider_screens/type_account_screen.dart';
+import 'package:aleef/modules/auth/views/auth_screens/user_auth_screens/user_auth_login.dart';
+import 'package:aleef/modules/auth/views/auth_screens/user_auth_screens/user_auth_register.dart';
 import 'package:aleef/shared/assets/app_color.dart';
 import 'package:aleef/shared/assets/app_text_styles.dart';
 import 'package:aleef/shared/routes/navigation_routes.dart';
@@ -84,7 +86,9 @@ class _AuthTypeScreenState extends State<AuthTypeScreen> {
                       borderRadius: BorderRadius.circular(15),
                     ),
                   ),
-                  onPressed: () {},
+                  onPressed: () {
+                    NavigationService().pushWidget(UserAuthRegister());
+                  },
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,

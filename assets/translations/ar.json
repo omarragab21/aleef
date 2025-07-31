@@ -30,6 +30,7 @@
     "enter_5_digit_code": "أدخل الكود المكون من 5 أرقام",
     "code_expires_in": "انتهاء صلاحية الرمز في",
     "confirm_code": "تأكيد الكود",
+    "resend_code":"إعادة إرسال الكود",
     "choose_location": "اختر منطقتك الجغرافية",
     "governorates": "المحافظات",
     "areas_or_states": "المناطق أو الولايات",

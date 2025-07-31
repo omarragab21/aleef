@@ -30,6 +30,7 @@
     "enter_5_digit_code": "Enter the 5-digit code",
     "code_expires_in": "Code expires in",
     "confirm_code": "Confirm Code",
+    "resend_code":"Resend Code",
     "choose_location": "Choose your location",
     "governorates": "Governorates",
     "areas_or_states": "Areas or States",

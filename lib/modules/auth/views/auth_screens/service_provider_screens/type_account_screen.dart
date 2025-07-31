@@ -1,3 +1,5 @@
+import 'package:aleef/modules/auth/views/auth_screens/seller_auth_screens/seller_auth_register.dart';
+import 'package:aleef/modules/auth/views/auth_screens/vet_auth_screens/vet_auth_login.dart';
 import 'package:aleef/shared/assets/app_color.dart';
 import 'package:aleef/shared/routes/navigation_routes.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -51,13 +53,17 @@ class _TypeAccountScreenState extends State<TypeAccountScreen> {
             TypeAccountWidget(
               svgPath: "assets/images/svg/stethoscope.svg",
               typeName: 'vet',
-              onPressed: () {},
+              onPressed: () {
+                NavigationService().pushWidget(VetAuthLoginScreen());
+              },
             ),
             SizedBox(height: 15.h),
             TypeAccountWidget(
               svgPath: "assets/images/svg/shopping_cart.svg",
               typeName: 'seller',
-              onPressed: () {},
+              onPressed: () {
+                NavigationService().pushWidget(SellerAuthRegister());
+              },
             ),
             SizedBox(height: 15.h),
             TypeAccountWidget(
