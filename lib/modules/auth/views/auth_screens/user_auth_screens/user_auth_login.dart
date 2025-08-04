@@ -1,10 +1,17 @@
+import 'dart:developer';
+
+import 'package:aleef/modules/auth/view_models/auth_view_model.dart';
+import 'package:aleef/modules/auth/views/auth_screens/user_auth_screens/user_location_screen.dart';
+import 'package:aleef/modules/auth/views/auth_screens/user_auth_screens/user_otp_screen.dart';
 import 'package:aleef/shared/assets/app_color.dart';
+import 'package:aleef/shared/constants/app_constants.dart';
 import 'package:aleef/shared/index.dart';
 import 'package:aleef/shared/routes/navigation_routes.dart';
 import 'package:aleef/shared/widgets/custom_phone_input.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
 class UserAuthLoginScreen extends StatefulWidget {
   const UserAuthLoginScreen({super.key});
@@ -14,6 +21,7 @@ class UserAuthLoginScreen extends StatefulWidget {
 }
 
 class _UserAuthLoginScreenState extends State<UserAuthLoginScreen> {
+  final TextEditingController phoneController = TextEditingController();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -96,7 +104,14 @@ class _UserAuthLoginScreenState extends State<UserAuthLoginScreen> {
             SizedBox(height: 20.h),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: CustomPhoneInput(onInputChanged: (value) {}),
+              child: CustomPhoneInput(
+                onInputChanged: (value) {
+                  phoneController.text = value.phoneNumber
+                      .toString()
+                      .replaceAll('+20', '');
+                },
+                borderColor: Color(0xFFE0E0E0),
+              ),
             ),
             Spacer(),
             Padding(
@@ -113,7 +128,20 @@ class _UserAuthLoginScreenState extends State<UserAuthLoginScreen> {
                     ),
                   ),
                   onPressed: () {
-                    // NavigationService().pushWidget(OnboardingScreen());
+                    // NavigationService().pushWidget(UserOtpScreen());
+                    log('phone: ${phoneController.text.trim()}');
+                    showDialog(
+                      context: context,
+                      builder: (context) => AppConstants.loadingScreen(),
+                    );
+                    context.read<AuthViewModel>().login(
+                      phoneController.text.trim(),
+                    );
+
+                    Future.delayed(const Duration(seconds: 2), () {
+                      Navigator.pop(context);
+                      NavigationService().pushWidget(UserLocationScreen());
+                    });
                   },
                   child: Text(
                     'login'.tr(),

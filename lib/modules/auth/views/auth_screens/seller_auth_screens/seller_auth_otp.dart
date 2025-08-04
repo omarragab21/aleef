@@ -1,3 +1,4 @@
+import 'package:aleef/modules/auth/views/auth_screens/seller_auth_screens/seller_auth_login.dart';
 import 'package:aleef/shared/assets/app_color.dart';
 import 'package:aleef/shared/routes/navigation_routes.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -215,7 +216,7 @@ class _SellerOtpScreenState extends State<SellerOtpScreen> {
                   ),
                   onPressed: () {
                     NavigationService().pushReplacementWidget(
-                      SellerOtpScreen(),
+                      SellerAuthLoginScreen(),
                     );
                   },
                   child: Text(

@@ -1,3 +1,4 @@
+import 'package:aleef/shared/assets/app_color.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -6,7 +7,7 @@ abstract final class AppConstants {
   static final GlobalKey<NavigatorState> navState = GlobalKey<NavigatorState>();
 
   // API Constants
-  static const String baseUrl = '';
+  static const String baseUrl = 'https://aleef.meetsyourneed.com/api';
 
   static late String token;
 
@@ -30,5 +31,13 @@ abstract final class AppConstants {
         break;
       default:
     }
+  }
+
+  // Widget for a simple loading screen
+  static Widget loadingScreen({String? message}) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Center(child: CircularProgressIndicator(color: AppColor.primary)),
+    );
   }
 }

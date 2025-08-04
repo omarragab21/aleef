@@ -1,5 +1,6 @@
 import 'package:aleef/modules/auth/views/auth_screens/seller_auth_screens/seller_auth_register.dart';
 import 'package:aleef/modules/auth/views/auth_screens/vet_auth_screens/vet_auth_login.dart';
+import 'package:aleef/modules/auth/views/auth_screens/vet_auth_screens/vet_auth_register.dart';
 import 'package:aleef/shared/assets/app_color.dart';
 import 'package:aleef/shared/routes/navigation_routes.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -51,10 +52,10 @@ class _TypeAccountScreenState extends State<TypeAccountScreen> {
             ),
             SizedBox(height: 30.h),
             TypeAccountWidget(
-              svgPath: "assets/images/svg/stethoscope.svg",
+              svgPath: "assets/images/svg/Stethoscope.svg",
               typeName: 'vet',
               onPressed: () {
-                NavigationService().pushWidget(VetAuthLoginScreen());
+                NavigationService().pushWidget(VetAuthRegister());
               },
             ),
             SizedBox(height: 15.h),

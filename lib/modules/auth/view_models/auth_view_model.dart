@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 
 import '../models/auth_model.dart';
@@ -9,8 +11,15 @@ class AuthViewModel extends ChangeNotifier {
 
   AuthViewModel(this.repository);
 
-  Future<void> login(String email, String password) async {
-    user = await repository.login(email, password);
+  Future<void> login(String phone) async {
+    user = await repository.login(phone);
+    log('user: ${user?.toJson()}');
+  }
+
+  Future<Map<String, dynamic>> register(Map<String, dynamic> data) async {
+    final response = await repository.register(data);
+    log('response: $response');
+    return response;
   }
 
   void logout() async {

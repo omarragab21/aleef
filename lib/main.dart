@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:aleef/core/provider/provider.dart';
 import 'package:aleef/modules/auth/views/welcome_screens/start_screen.dart';
 import 'package:aleef/shared/routes/navigation_routes.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:flutter/material.dart' as materail;
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,7 +20,7 @@ void main() async {
       path: 'assets/translations', // مسار ملفات الترجمة
       fallbackLocale: Locale('en'),
       startLocale: Locale('ar'),
-      child: MyApp(),
+      child: MultiProvider(providers: [...provider], child: MyApp()),
     ),
   );
 }

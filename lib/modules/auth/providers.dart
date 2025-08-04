@@ -4,7 +4,7 @@ import 'view_models/auth_view_model.dart';
 
 final authProviders = [
   Provider(create: (_) => AuthApiRepository()),
-  ProxyProvider<AuthApiRepository, AuthViewModel>(
-    update: (_, repo, __) => AuthViewModel(repo),
+  ChangeNotifierProvider<AuthViewModel>(
+    create: (context) => AuthViewModel(context.read<AuthApiRepository>()),
   ),
 ];

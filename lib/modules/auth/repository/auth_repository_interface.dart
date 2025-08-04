@@ -1,6 +1,7 @@
 import '../models/auth_model.dart';
 
 abstract class AuthRepositoryInterface {
-  Future<AuthModel?> login(String email, String password);
+  Future<Map<String, dynamic>> register(Map<String, dynamic> data);
+  Future<AuthModel?> login(String phone);
   Future<void> logout();
 }

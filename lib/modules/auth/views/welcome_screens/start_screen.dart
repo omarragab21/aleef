@@ -35,7 +35,7 @@ class StartScreen extends StatelessWidget {
                     child: Text(
                       'English',
                       style: TextStyle(
-                        color: Colors.green,
+                        color: AppColor.primary,
                         decoration: TextDecoration.underline,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -43,7 +43,7 @@ class StartScreen extends StatelessWidget {
                     ),
                   ),
                   SizedBox(width: 4),
-                  Icon(Icons.language, color: Colors.green),
+                  Icon(Icons.language, color: AppColor.primary),
                 ],
               ),
             ),
