@@ -7,11 +7,43 @@ import 'animals_repository_interface.dart';
 class AnimalsApiRepository implements AnimalsRepositoryInterface {
   final http.Client _client;
 
-  AnimalsApiRepository({http.Client? client}) : _client = client ?? http.Client();
+  AnimalsApiRepository({http.Client? client})
+    : _client = client ?? http.Client();
 
   @override
   Future<List<AnimalModel>> getAnimals() async {
     try {
+      // For demonstration purposes, return sample data
+      // In production, this would make an actual API call
+      return [
+        AnimalModel(
+          id: '1',
+          name: 'لولو',
+          type: 'قطة',
+          breed: 'شيرازي',
+          age: '2',
+          weight: '4.5',
+          imageUrl:
+              'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=150&h=150&fit=crop&crop=face',
+          createdAt: DateTime.now().subtract(const Duration(days: 30)),
+          updatedAt: DateTime.now(),
+        ),
+        AnimalModel(
+          id: '2',
+          name: 'نجم',
+          type: 'حصان',
+          breed: 'كحيلان',
+          age: '5',
+          weight: '450',
+          imageUrl:
+              'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=150&h=150&fit=crop&crop=face',
+          createdAt: DateTime.now().subtract(const Duration(days: 90)),
+          updatedAt: DateTime.now(),
+        ),
+      ];
+
+      // Uncomment below for actual API call
+      /*
       final response = await _client.get(
         Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.animals}'),
         headers: {
@@ -27,6 +59,7 @@ class AnimalsApiRepository implements AnimalsRepositoryInterface {
       } else {
         throw Exception('Failed to load animals: ${response.statusCode}');
       }
+      */
     } catch (e) {
       throw Exception('Error loading animals: $e');
     }
@@ -97,4 +130,4 @@ class AnimalsApiRepository implements AnimalsRepositoryInterface {
       throw Exception('Error deleting animal: $e');
     }
   }
-} 
+}

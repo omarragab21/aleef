@@ -1,4 +1,6 @@
+import 'package:aleef/modules/user/main/views/main_screen.dart';
 import 'package:aleef/shared/assets/app_color.dart';
+import 'package:aleef/shared/routes/navigation_routes.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -290,9 +292,7 @@ class _UserLocationScreenState extends State<UserLocationScreen> {
                     ),
                   ),
                   onPressed: () {
-                    // NavigationService().pushReplacementWidget(
-                    //   UserAuthLoginScreen(),
-                    // );
+                    NavigationService().pushReplacementWidget(MainScreen());
                   },
                   child: Text(
                     'save_location'.tr(),

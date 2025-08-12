@@ -1,7 +1,11 @@
+import 'package:aleef/modules/user/services/views/store_screens/product_screen.dart';
+import 'package:aleef/shared/routes/navigation_routes.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../view_models/services_view_model.dart';
 import '../models/service_model.dart';
+import 'package:aleef/shared/assets/app_color.dart';
 
 class ServicesScreen extends StatefulWidget {
   const ServicesScreen({super.key});
@@ -11,8 +15,6 @@ class ServicesScreen extends StatefulWidget {
 }
 
 class _ServicesScreenState extends State<ServicesScreen> {
-  final TextEditingController _searchController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
@@ -23,175 +25,107 @@ class _ServicesScreenState extends State<ServicesScreen> {
   }
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Services'),
-        backgroundColor: Colors.white,
-        elevation: 0,
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            // Header Section
+            _buildHeader(),
+            const SizedBox(height: 20),
+            // Service Categories Grid
+            Expanded(child: _buildServiceCategories()),
+          ],
+        ),
       ),
-      body: Column(
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Search Bar
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search services...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onSubmitted: (query) {
-                if (query.isNotEmpty) {
-                  context.read<ServicesViewModel>().searchServices(query);
-                } else {
-                  context.read<ServicesViewModel>().loadServices();
-                }
-              },
+          const SizedBox(height: 8),
+          const Text(
+            'خدماتنا',
+            style: TextStyle(
+              fontFamily: 'Cairo',
+              fontWeight: FontWeight.w700,
+              fontStyle: FontStyle.normal,
+              fontSize: 24,
+              height: 1.0,
+              letterSpacing: 0,
+              color: Color(0xFF2D2D2D),
+            ),
+            textAlign: TextAlign.center,
+            textHeightBehavior: TextHeightBehavior(
+              applyHeightToFirstAscent: false,
+              applyHeightToLastDescent: false,
             ),
           ),
-          // Category Filter
-          Consumer<ServicesViewModel>(
-            builder: (context, viewModel, child) {
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    FilterChip(
-                      label: const Text('All'),
-                      selected: viewModel.selectedCategory == null,
-                      onSelected: (selected) {
-                        if (selected) {
-                          viewModel.loadServices();
-                        }
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('Veterinary'),
-                      selected: viewModel.selectedCategory == 'veterinary',
-                      onSelected: (selected) {
-                        if (selected) {
-                          viewModel.loadServices(category: 'veterinary');
-                        }
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('Grooming'),
-                      selected: viewModel.selectedCategory == 'grooming',
-                      onSelected: (selected) {
-                        if (selected) {
-                          viewModel.loadServices(category: 'grooming');
-                        }
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('Training'),
-                      selected: viewModel.selectedCategory == 'training',
-                      onSelected: (selected) {
-                        if (selected) {
-                          viewModel.loadServices(category: 'training');
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              );
-            },
+          const SizedBox(height: 12),
+          const Text(
+            'ما الذي تبحث عنه ؟',
+            style: TextStyle(
+              fontFamily: 'Cairo',
+              fontWeight: FontWeight.w600,
+              fontStyle: FontStyle.normal,
+              fontSize: 20,
+              height: 1.0,
+              letterSpacing: 0,
+              color: Color(0xFF2D2D2D),
+            ),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
-          // Services List
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServiceCategories() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Expanded(
-            child: Consumer<ServicesViewModel>(
-              builder: (context, viewModel, child) {
-                if (viewModel.isLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-
-                if (viewModel.error != null) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Error: ${viewModel.error}',
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () => viewModel.loadServices(),
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                if (viewModel.services.isEmpty) {
-                  return const Center(
-                    child: Text('No services found.'),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: viewModel.services.length,
-                  itemBuilder: (context, index) {
-                    final service = viewModel.services[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage: service.imageUrl != null 
-                              ? NetworkImage(service.imageUrl!)
-                              : null,
-                          child: service.imageUrl == null 
-                              ? const Icon(Icons.pets)
-                              : null,
-                        ),
-                        title: Text(service.name ?? 'Unnamed Service'),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(service.description ?? 'No description'),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${service.providerName ?? 'Unknown'} • \$${service.price?.toStringAsFixed(2) ?? '0.00'}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green,
-                              ),
-                            ),
-                          ],
-                        ),
-                        trailing: ElevatedButton(
-                          onPressed: service.isAvailable == true
-                              ? () => _bookService(context, service)
-                              : null,
-                          child: const Text('Book'),
-                        ),
-                        onTap: () {
-                          // Navigate to service detail screen
-                        },
-                      ),
-                    );
-                  },
-                );
-              },
+            child: GridView.count(
+              crossAxisCount: 2,
+              crossAxisSpacing: 60,
+              mainAxisSpacing: 60,
+              childAspectRatio: 1.1,
+              children: [
+                _buildServiceCard(
+                  icon: 'assets/images/png/store.png',
+                  title: 'store'.tr(),
+                  onTap: () => _navigateToServiceCategory('store'),
+                ),
+                _buildServiceCard(
+                  icon: 'assets/images/png/doctor.png',
+                  title: 'book_doctor'.tr(),
+                  onTap: () => _navigateToServiceCategory('doctor'),
+                ),
+                _buildServiceCard(
+                  icon: 'assets/images/png/trainer.png',
+                  title: 'trainers'.tr(),
+                  onTap: () => _navigateToServiceCategory('trainer'),
+                ),
+                _buildServiceCard(
+                  icon: 'assets/images/png/hotel.png',
+                  title: 'hotels'.tr(),
+                  onTap: () => _navigateToServiceCategory('hotel'),
+                ),
+                _buildServiceCard(
+                  icon: 'assets/images/png/scisorss.png',
+                  title: 'groomers'.tr(),
+                  onTap: () => _navigateToServiceCategory('groomer'),
+                  isCentered: true,
+                ),
+              ],
             ),
           ),
         ],
@@ -199,26 +133,159 @@ class _ServicesScreenState extends State<ServicesScreen> {
     );
   }
 
-  void _bookService(BuildContext context, ServiceModel service) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Book Service'),
-        content: Text('Are you sure you want to book ${service.name}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+  Widget _buildServiceCard({
+    required String icon,
+    required String title,
+    required VoidCallback onTap,
+    bool isCentered = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 134,
+        height: 114,
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(1),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: const Color(0xFFB0B0B0), width: 2),
+          boxShadow: [
+            const BoxShadow(
+              color: Color(0x66000000), // #00000040 with 40% opacity
+              offset: Offset(0, 4),
+              blurRadius: 4,
+              spreadRadius: 0,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Center(child: Image.asset(icon, width: 60, height: 60)),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, -2),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              context.read<ServicesViewModel>().bookService(service.id!);
-            },
-            child: const Text('Book'),
+        ],
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavItem(
+                icon: 'assets/images/svg/home.svg',
+                label: 'الرئيسية',
+                isActive: false,
+                onTap: () => _navigateToHome(),
+              ),
+              _buildNavItem(
+                icon: 'assets/images/svg/services.svg',
+                label: 'الخدمات',
+                isActive: true,
+                onTap: () {},
+              ),
+              _buildNavItem(
+                icon: 'assets/images/svg/dog_tracks.svg',
+                label: 'حيواناتي',
+                isActive: false,
+                onTap: () => _navigateToMyAnimals(),
+              ),
+              _buildNavItem(
+                icon: 'assets/images/svg/user.svg',
+                label: 'حسابي',
+                isActive: false,
+                onTap: () => _navigateToProfile(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required String icon,
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(
+            icon,
+            width: 24,
+            height: 24,
+            color: isActive ? AppColor.primary : Colors.grey,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: isActive ? AppColor.primary : Colors.grey,
+            ),
           ),
         ],
       ),
     );
   }
-} 
+
+  void _navigateToServiceCategory(String category) {
+    // Navigate to specific service category
+    print('Navigating to $category category');
+    if (category == 'store') {
+      NavigationService().pushWidget(ProductScreen());
+    }
+  }
+
+  void _navigateToHome() {
+    // Navigate to home screen
+    print('Navigating to home');
+  }
+
+  void _navigateToMyAnimals() {
+    // Navigate to my animals screen
+    print('Navigating to my animals');
+  }
+
+  void _navigateToProfile() {
+    // Navigate to profile screen
+    print('Navigating to profile');
+  }
+}

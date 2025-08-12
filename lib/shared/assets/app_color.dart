@@ -10,4 +10,7 @@ class AppColor {
   static const Color warmBeige = Color(0xFFD9C3A5);
   static const Color teal = Color(0xFF4EB3C1);
   static const Color lightCyan = Color(0xFFE0F7F9);
+  static const Color lightGreen = Color(0xFFA4D4AE);
+  static const Color lightGray = Color(0xFFB0B0B0);
+  static const Color f6f1e9 = Color(0xFFF6F1E9);
 }
