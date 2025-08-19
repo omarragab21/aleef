@@ -1,3 +1,7 @@
+import 'package:aleef/modules/user/profile/views/edit_profile_screen.dart';
+import 'package:aleef/modules/user/services/views/store_screens/my_orders_screen.dart';
+import 'package:aleef/modules/user/services/views/vets_screens/my_appointments_screen.dart';
+import 'package:aleef/shared/routes/navigation_routes.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -96,7 +100,13 @@ class _AppDrawerState extends State<AppDrawer> {
         padding: const EdgeInsets.symmetric(horizontal: 0),
         child: Column(
           children: [
-            _buildMenuItem(icon: Icons.person, title: 'حسابي', onTap: () {}),
+            _buildMenuItem(
+              icon: Icons.person,
+              title: 'حسابي',
+              onTap: () {
+                NavigationService().pushWidget(EditProfileScreen());
+              },
+            ),
             _buildMenuItem(
               icon: Icons.credit_card,
               title: 'بطاقات الإئتمان',
@@ -105,12 +115,16 @@ class _AppDrawerState extends State<AppDrawer> {
             _buildMenuItem(
               icon: Icons.calendar_today,
               title: 'حجوزاتي',
-              onTap: () {},
+              onTap: () {
+                NavigationService().pushWidget(MyAppointmentsScreen());
+              },
             ),
             _buildMenuItem(
               icon: Icons.shopping_bag,
               title: 'طلباتي',
-              onTap: () {},
+              onTap: () {
+                NavigationService().pushWidget(MyOrdersScreen());
+              },
             ),
             _buildLanguageMenuItem(),
             _buildMenuItem(

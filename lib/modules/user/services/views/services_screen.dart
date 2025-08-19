@@ -1,4 +1,5 @@
 import 'package:aleef/modules/user/services/views/store_screens/product_screen.dart';
+import 'package:aleef/modules/user/services/views/vets_screens/vets_screen.dart';
 import 'package:aleef/shared/routes/navigation_routes.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -107,7 +108,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                 _buildServiceCard(
                   icon: 'assets/images/png/doctor.png',
                   title: 'book_doctor'.tr(),
-                  onTap: () => _navigateToServiceCategory('doctor'),
+                  onTap: () => _navigateToServiceCategory('vets'),
                 ),
                 _buildServiceCard(
                   icon: 'assets/images/png/trainer.png',
@@ -185,107 +186,14 @@ class _ServicesScreenState extends State<ServicesScreen> {
     );
   }
 
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(
-                icon: 'assets/images/svg/home.svg',
-                label: 'الرئيسية',
-                isActive: false,
-                onTap: () => _navigateToHome(),
-              ),
-              _buildNavItem(
-                icon: 'assets/images/svg/services.svg',
-                label: 'الخدمات',
-                isActive: true,
-                onTap: () {},
-              ),
-              _buildNavItem(
-                icon: 'assets/images/svg/dog_tracks.svg',
-                label: 'حيواناتي',
-                isActive: false,
-                onTap: () => _navigateToMyAnimals(),
-              ),
-              _buildNavItem(
-                icon: 'assets/images/svg/user.svg',
-                label: 'حسابي',
-                isActive: false,
-                onTap: () => _navigateToProfile(),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required String icon,
-    required String label,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Image.asset(
-            icon,
-            width: 24,
-            height: 24,
-            color: isActive ? AppColor.primary : Colors.grey,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: isActive ? AppColor.primary : Colors.grey,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _navigateToServiceCategory(String category) {
     // Navigate to specific service category
     print('Navigating to $category category');
     if (category == 'store') {
       NavigationService().pushWidget(ProductScreen());
     }
-  }
-
-  void _navigateToHome() {
-    // Navigate to home screen
-    print('Navigating to home');
-  }
-
-  void _navigateToMyAnimals() {
-    // Navigate to my animals screen
-    print('Navigating to my animals');
-  }
-
-  void _navigateToProfile() {
-    // Navigate to profile screen
-    print('Navigating to profile');
+    if (category == 'vets') {
+      NavigationService().pushWidget(VetsScreen());
+    }
   }
 }
