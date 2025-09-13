@@ -1,6 +1,7 @@
 import 'package:aleef/modules/user/my_animals/views/add_animal_screen.dart';
 import 'package:aleef/modules/user/my_animals/views/animal_details_screen.dart';
 import 'package:aleef/shared/routes/navigation_routes.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
@@ -67,7 +68,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => viewModel.loadAnimals(),
-                    child: const Text('Retry'),
+                    child: Text('retry'.tr()),
                   ),
                 ],
               ),
@@ -332,19 +333,24 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Animal'),
-        content: Text('Are you sure you want to delete ${animal.name}?'),
+        title: Text('delete_animal'.tr()),
+        content: Text(
+          'confirm_delete_animal'.tr().replaceAll(
+            '{animalName}',
+            animal.name ?? '',
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text('cancel'.tr()),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
               context.read<AnimalsViewModel>().deleteAnimal(animal.id!);
             },
-            child: const Text('Delete'),
+            child: Text('delete'.tr()),
           ),
         ],
       ),

@@ -1,12 +1,49 @@
 import 'package:aleef/shared/assets/app_color.dart';
+import 'package:aleef/modules/user/services/view_models/services_view_model.dart';
+import 'package:aleef/modules/user/services/view_models/cart_view_model.dart';
+import 'package:aleef/modules/user/services/views/store_screens/product_details_screen.dart';
+import 'package:aleef/modules/user/services/views/store_screens/cart_screen.dart';
+import 'package:aleef/shared/routes/navigation_routes.dart';
+import 'package:aleef/shared/widgets/price_filter_dialog.dart';
+import 'package:aleef/shared/widgets/cart_badge.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 
-class CategoryScreen extends StatelessWidget {
+class CategoryScreen extends StatefulWidget {
   final String categoryName;
-  const CategoryScreen({super.key, required this.categoryName});
+  final int categoryId;
+  const CategoryScreen({
+    super.key,
+    required this.categoryName,
+    required this.categoryId,
+  });
+
+  @override
+  State<CategoryScreen> createState() => _CategoryScreenState();
+}
+
+class _CategoryScreenState extends State<CategoryScreen> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch category products when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ServicesViewModel>().getCategoryProducts(
+        categoryId: widget.categoryId,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,22 +54,37 @@ class CategoryScreen extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        leading: SizedBox(),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios, color: AppColor.primary),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(left: 16.0),
             child: Padding(
               padding: const EdgeInsets.all(4.0),
-              child: SvgPicture.asset(
-                'assets/images/svg/shopping_cart.svg',
-                width: 28,
-                height: 28,
+              child: Consumer<CartViewModel>(
+                builder: (context, cartViewModel, child) {
+                  return GestureDetector(
+                    onTap: () {
+                      NavigationService().pushWidget(CartScreen());
+                    },
+                    child: CartBadge(
+                      count: cartViewModel.itemCount,
+                      child: SvgPicture.asset(
+                        'assets/images/svg/shopping_cart.svg',
+                        width: 28,
+                        height: 28,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),
         ],
         title: Text(
-          categoryName,
+          widget.categoryName,
           style: TextStyle(
             fontFamily: 'Cairo',
             fontWeight: FontWeight.w700,
@@ -60,64 +112,139 @@ class CategoryScreen extends StatelessWidget {
               child: SizedBox(
                 width: double.infinity,
                 height: 44.h,
-                child: TextField(
-                  onTap: () {
-                    // Handle TextField tap here
-                    print('TextField tapped');
-                  },
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.only(
-                      top: 7,
-                      bottom: 7,
-                      right: 38,
-                      left:
-                          12, // Adjusted for better UX; original left: 233px is too much for a 357px field
-                    ),
-                    hintText: 'search_for_product'.tr(),
-                    hintStyle: const TextStyle(
-                      fontFamily: 'Cairo',
-                      fontWeight: FontWeight.w400,
-                      fontSize: 16,
-                      color: Color(0xFFB0B0B0),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: const BorderSide(
-                        color: Color(0xFF6D9773),
-                        width: 2,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: const BorderSide(
-                        color: Color(0xFF6D9773),
-                        width: 2,
-                      ),
-                    ),
-                    prefixIcon: IconButton(
-                      icon: const Icon(Icons.search, color: Color(0xFF6D9773)),
-                      onPressed: () {
-                        // Handle prefix icon (search) action
-                        print('Search icon pressed');
+                child: Consumer<ServicesViewModel>(
+                  builder: (context, servicesViewModel, child) {
+                    return TextField(
+                      controller: _searchController,
+                      onChanged: (value) {
+                        // Clear search when text is empty
+                        if (value.isEmpty) {
+                          context.read<ServicesViewModel>().getCategoryProducts(
+                            categoryId: widget.categoryId,
+                          );
+                        }
                       },
-                    ),
-                    suffixIcon: IconButton(
-                      icon: Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: SvgPicture.asset(
-                          'assets/images/svg/fliter_icon.svg',
-                          width: 24,
-                          height: 24,
+                      onSubmitted: (value) {
+                        // Search when user presses enter
+                        if (value.isNotEmpty) {
+                          context
+                              .read<ServicesViewModel>()
+                              .searchCategoryProducts(value, widget.categoryId);
+                        }
+                      },
+                      decoration: InputDecoration(
+                        contentPadding: const EdgeInsets.only(
+                          top: 7,
+                          bottom: 7,
+                          right: 38,
+                          left:
+                              12, // Adjusted for better UX; original left: 233px is too much for a 357px field
+                        ),
+                        hintText: 'search_for_product'.tr(),
+                        hintStyle: const TextStyle(
+                          fontFamily: 'Cairo',
+                          fontWeight: FontWeight.w400,
+                          fontSize: 16,
+                          color: Color(0xFFB0B0B0),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF6D9773),
+                            width: 2,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF6D9773),
+                            width: 2,
+                          ),
+                        ),
+                        prefixIcon: IconButton(
+                          icon: const Icon(
+                            Icons.search,
+                            color: Color(0xFF6D9773),
+                          ),
+                          onPressed: () {
+                            // Search when search icon is pressed
+                            final query = _searchController.text.trim();
+                            if (query.isNotEmpty) {
+                              context
+                                  .read<ServicesViewModel>()
+                                  .searchCategoryProducts(
+                                    query,
+                                    widget.categoryId,
+                                  );
+                            }
+                          },
+                        ),
+                        suffixIcon: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (servicesViewModel.searchQuery.isNotEmpty)
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.clear,
+                                  color: Color(0xFF6D9773),
+                                ),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  context
+                                      .read<ServicesViewModel>()
+                                      .getCategoryProducts(
+                                        categoryId: widget.categoryId,
+                                      );
+                                },
+                              ),
+                            IconButton(
+                              icon: Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: SvgPicture.asset(
+                                  'assets/images/svg/fliter_icon.svg',
+                                  width: 24,
+                                  height: 24,
+                                ),
+                              ),
+                              onPressed: () {
+                                // Show price filter dialog
+                                showDialog(
+                                  context: context,
+                                  builder: (context) =>
+                                      Consumer<ServicesViewModel>(
+                                        builder:
+                                            (
+                                              context,
+                                              servicesViewModel,
+                                              child,
+                                            ) {
+                                              return PriceFilterDialog(
+                                                currentMinPrice:
+                                                    servicesViewModel.minPrice,
+                                                currentMaxPrice:
+                                                    servicesViewModel.maxPrice,
+                                                onApply: (minPrice, maxPrice) {
+                                                  servicesViewModel
+                                                      .applyCategoryPriceFilter(
+                                                        categoryId:
+                                                            widget.categoryId,
+                                                        minPrice: minPrice,
+                                                        maxPrice: maxPrice,
+                                                      );
+                                                },
+                                              );
+                                            },
+                                      ),
+                                );
+                              },
+                            ),
+                          ],
                         ),
                       ),
-                      onPressed: () {
-                        // Handle suffix icon (mic) action
-                        print('Mic icon pressed');
-                      },
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -127,92 +254,205 @@ class CategoryScreen extends StatelessWidget {
 
             // GridView of products
             Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.only(left: 18.0, right: 18.0),
-                shrinkWrap: true,
-                physics: const ClampingScrollPhysics(),
-                itemCount: 8, // Example count, replace with your data length
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 30,
-                  childAspectRatio: 156 / 210,
-                ),
-                itemBuilder: (context, index) {
-                  return Container(
-                    width: 156,
-                    height: 210,
-                    decoration: BoxDecoration(
-                      color: Color(0xFFF6F1E9),
-                      borderRadius: BorderRadius.circular(15),
+              child: Consumer<ServicesViewModel>(
+                builder: (context, servicesViewModel, child) {
+                  if (servicesViewModel.isLoadingCategoryProducts) {
+                    return Center(
+                      child: CircularProgressIndicator(color: AppColor.primary),
+                    );
+                  }
+
+                  if (servicesViewModel.categoryProductsError != null) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: Colors.red,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'error_loading_products'.tr(),
+                            style: TextStyle(fontSize: 16, color: Colors.red),
+                          ),
+                          SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () {
+                              servicesViewModel.getCategoryProducts(
+                                categoryId: widget.categoryId,
+                              );
+                            },
+                            child: Text('retry'.tr()),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (servicesViewModel.categoryProducts.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 64,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'no_products_available'.tr(),
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return GridView.builder(
+                    padding: const EdgeInsets.only(left: 18.0, right: 18.0),
+                    shrinkWrap: true,
+                    physics: const ClampingScrollPhysics(),
+                    itemCount: servicesViewModel.categoryProducts.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 30,
+                      childAspectRatio: 156 / 210,
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Example image, replace with your asset or network image
-                        SizedBox(height: 16),
-                        Center(
-                          child: Container(
-                            width: 120,
-                            height: 120,
-                            child: Image.asset(
-                              'assets/images/png/product_item.png',
-                              fit: BoxFit.cover,
-                            ),
+                    itemBuilder: (context, index) {
+                      final product = servicesViewModel.categoryProducts[index];
+                      return GestureDetector(
+                        onTap: () {
+                          NavigationService().pushWidget(
+                            ProductDetailsScreen(product: product),
+                          );
+                        },
+                        child: Container(
+                          width: 156,
+                          height: 210,
+                          decoration: BoxDecoration(
+                            color: Color(0xFFF6F1E9),
+                            borderRadius: BorderRadius.circular(15),
                           ),
-                        ),
-                        SizedBox(height: 16),
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            left: 16.0,
-                            right: 16.0,
-                          ),
-                          child: Text(
-                            'طعام قطط',
-                            style: TextStyle(
-                              fontFamily: 'Cairo',
-                              fontWeight: FontWeight.w400,
-                              fontStyle: FontStyle.normal,
-                              fontSize: 12,
-                              height: 1.6,
-                              letterSpacing: 0,
-                              color: Color(0xFF2D2D2D),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                '12,99 ريال',
-                                style: TextStyle(
-                                  fontFamily: 'Cairo',
-                                  fontWeight: FontWeight.w600,
-                                  fontStyle: FontStyle.normal,
-                                  fontSize: 20,
-                                  height: 1.5,
-                                  letterSpacing: 0,
-                                  color: Color(0xFF2D2D2D),
+                              SizedBox(height: 16),
+                              Center(
+                                child: Container(
+                                  width: 120,
+                                  height: 120,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: product.image.isNotEmpty
+                                        ? Image.network(
+                                            product.image,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
+                                                  return Image.asset(
+                                                    'assets/images/png/product_item.png',
+                                                    fit: BoxFit.cover,
+                                                  );
+                                                },
+                                          )
+                                        : Image.asset(
+                                            'assets/images/png/product_item.png',
+                                            fit: BoxFit.cover,
+                                          ),
+                                  ),
                                 ),
                               ),
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: AppColor.primary,
-                                  shape: BoxShape.circle,
+                              SizedBox(height: 16),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 16.0,
+                                  right: 16.0,
                                 ),
-                                child: Icon(Icons.add, color: Colors.white),
+                                child: Text(
+                                  product.name,
+                                  style: TextStyle(
+                                    fontFamily: 'Cairo',
+                                    fontWeight: FontWeight.w400,
+                                    fontStyle: FontStyle.normal,
+                                    fontSize: 12,
+                                    height: 1.6,
+                                    letterSpacing: 0,
+                                    color: Color(0xFF2D2D2D),
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8.0,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      '${product.price} ريال',
+                                      style: TextStyle(
+                                        fontFamily: 'Cairo',
+                                        fontWeight: FontWeight.w600,
+                                        fontStyle: FontStyle.normal,
+                                        fontSize: 20,
+                                        height: 1.5,
+                                        letterSpacing: 0,
+                                        color: Color(0xFF2D2D2D),
+                                      ),
+                                    ),
+                                    Consumer<CartViewModel>(
+                                      builder: (context, cartViewModel, child) {
+                                        final isInCart = cartViewModel.isInCart(
+                                          product.id,
+                                        );
+
+                                        return GestureDetector(
+                                          onTap: () {
+                                            if (!isInCart) {
+                                              cartViewModel.addToCart(product);
+                                            }
+                                            // If already in cart, do nothing
+                                          },
+                                          child: Container(
+                                            width: 36,
+                                            height: 36,
+                                            decoration: BoxDecoration(
+                                              color: isInCart
+                                                  ? Colors.grey
+                                                  : AppColor.primary,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Icon(
+                                              isInCart
+                                                  ? Icons.check
+                                                  : Icons.add,
+                                              color: Colors.white,
+                                              size: 20,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   );
                 },
               ),

@@ -3,6 +3,9 @@ import 'package:aleef/shared/routes/navigation_routes.dart';
 import 'package:aleef/shared/widgets/custom_phone_input.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:provider/provider.dart';
+import '../view_models/profile_view_model.dart';
+import '../models/profile_model.dart';
 import '../../../../shared/assets/app_color.dart';
 import '../../../../shared/assets/app_text_styles.dart';
 
@@ -15,13 +18,23 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _fullNameController = TextEditingController(text: 'أحمد .....');
-  final _phoneController = TextEditingController(text: '+968 000 000 0000');
-  final _emailController = TextEditingController(text: 'example@gmail.com');
-  final _dateOfBirthController = TextEditingController(text: '00/00/0000');
+  final _fullNameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _dateOfBirthController = TextEditingController();
 
   String _selectedGender = 'male';
   bool _isEditing = false;
+  ProfileModel? _profile;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load profile data when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadProfileData();
+    });
+  }
 
   @override
   void dispose() {
@@ -30,6 +43,33 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _emailController.dispose();
     _dateOfBirthController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadProfileData() async {
+    final profileViewModel = context.read<ProfileViewModel>();
+    await profileViewModel.loadProfile();
+
+    if (profileViewModel.profile != null) {
+      setState(() {
+        _profile = profileViewModel.profile;
+        _populateFields();
+      });
+    }
+  }
+
+  void _populateFields() {
+    if (_profile != null) {
+      _fullNameController.text = _profile!.fullName;
+      _phoneController.text = _profile!.phone ?? '';
+      _emailController.text = _profile!.email ?? '';
+      _selectedGender = _profile!.gender ?? 'male';
+
+      if (_profile!.dateOfBirth != null) {
+        final date = _profile!.dateOfBirth!;
+        _dateOfBirthController.text =
+            '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+      }
+    }
   }
 
   @override
@@ -80,59 +120,89 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 20),
+      body: Consumer<ProfileViewModel>(
+        builder: (context, profileViewModel, child) {
+          if (profileViewModel.isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(color: AppColor.primary),
+            );
+          }
 
-              // Full Name Field
-              _buildInputField(
-                label: 'full_name'.tr(),
-                controller: _fullNameController,
-                enabled: _isEditing,
+          if (profileViewModel.error != null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Error: ${profileViewModel.error}',
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => _loadProfileData(),
+                    child: Text('retry'.tr()),
+                  ),
+                ],
               ),
+            );
+          }
 
-              const SizedBox(height: 24),
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
 
-              // Phone Number Field
-              _buildPhoneField(),
+                  // Full Name Field
+                  _buildInputField(
+                    label: 'full_name'.tr(),
+                    controller: _fullNameController,
+                    enabled: _isEditing,
+                  ),
 
-              const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-              // Email Field
-              _buildInputField(
-                label: 'email'.tr(),
-                controller: _emailController,
-                enabled: _isEditing,
-                keyboardType: TextInputType.emailAddress,
+                  // Phone Number Field
+                  _buildPhoneField(),
+
+                  const SizedBox(height: 24),
+
+                  // Email Field
+                  _buildInputField(
+                    label: 'email'.tr(),
+                    controller: _emailController,
+                    enabled: _isEditing,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Date of Birth Field
+                  _buildDateField(),
+
+                  const SizedBox(height: 24),
+
+                  // Gender Selection
+                  _buildGenderSelection(),
+
+                  const SizedBox(height: 24),
+
+                  // Address Section
+                  _buildAddressSection(),
+
+                  const SizedBox(height: 40),
+
+                  // Save Button
+                  _buildSaveButton(),
+                ],
               ),
-
-              const SizedBox(height: 24),
-
-              // Date of Birth Field
-              _buildDateField(),
-
-              const SizedBox(height: 24),
-
-              // Gender Selection
-              _buildGenderSelection(),
-
-              const SizedBox(height: 24),
-
-              // Address Section
-              _buildAddressSection(),
-
-              const SizedBox(height: 40),
-
-              // Save Button
-              _buildSaveButton(),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -161,7 +231,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
-          enabled: true,
+          enabled: enabled,
           keyboardType: keyboardType,
           decoration: InputDecoration(
             filled: true,
@@ -213,12 +283,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         const SizedBox(height: 8),
         CustomPhoneInput(
           onInputChanged: (value) {
-            _phoneController.text = value.phoneNumber.toString().replaceAll(
-              '+968',
-              '',
-            );
+            _phoneController.text = value.phoneNumber ?? '';
           },
-          borderColor: Color(0xFFE0E0E0),
+          initialValue:
+              _profile?.phone?.replaceAll(RegExp(r'^\+\d+'), '') ?? '',
+          borderColor: const Color(0xFFE0E0E0),
+          isEnabled: _isEditing,
         ),
       ],
     );
@@ -243,7 +313,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         const SizedBox(height: 8),
         TextFormField(
           controller: _dateOfBirthController,
-          enabled: true,
+          enabled: _isEditing,
           decoration: InputDecoration(
             hintText: 'dd/mm/yyyy',
             hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColor.title),
@@ -456,18 +526,72 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  void _saveProfile() {
+  Future<void> _saveProfile() async {
     if (_formKey.currentState!.validate()) {
-      // TODO: Implement save profile logic
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Profile saved successfully'),
-          backgroundColor: AppColor.primary,
-        ),
-      );
-      setState(() {
-        _isEditing = false;
-      });
+      try {
+        final profileViewModel = context.read<ProfileViewModel>();
+
+        // Parse date from controller
+        DateTime? dateOfBirth;
+        if (_dateOfBirthController.text.isNotEmpty) {
+          final dateParts = _dateOfBirthController.text.split('/');
+          if (dateParts.length == 3) {
+            dateOfBirth = DateTime(
+              int.parse(dateParts[2]), // year
+              int.parse(dateParts[1]), // month
+              int.parse(dateParts[0]), // day
+            );
+          }
+        }
+
+        // Create updated profile model
+        final updatedProfile = ProfileModel(
+          id: _profile?.id,
+          name: _fullNameController.text.trim(),
+          email: _emailController.text.trim(),
+          phone: _phoneController.text.trim(),
+          gender: _selectedGender,
+          dateOfBirth: dateOfBirth,
+          address: _profile?.address,
+          city: _profile?.city,
+          country: _profile?.country,
+          profileImage: _profile?.profileImage,
+          avatar: _profile?.avatar,
+          firstName: _profile?.firstName,
+          lastName: _profile?.lastName,
+          createdAt: _profile?.createdAt,
+          updatedAt: DateTime.now(),
+        );
+
+        await profileViewModel.updateProfile(updatedProfile);
+
+        if (profileViewModel.error == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('profile_saved_successfully'.tr()),
+              backgroundColor: AppColor.primary,
+            ),
+          );
+          setState(() {
+            _isEditing = false;
+            _profile = profileViewModel.profile;
+          });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${profileViewModel.error}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving profile: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }

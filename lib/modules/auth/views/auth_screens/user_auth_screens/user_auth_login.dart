@@ -22,6 +22,7 @@ class UserAuthLoginScreen extends StatefulWidget {
 
 class _UserAuthLoginScreenState extends State<UserAuthLoginScreen> {
   final TextEditingController phoneController = TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -83,34 +84,42 @@ class _UserAuthLoginScreenState extends State<UserAuthLoginScreen> {
               ),
             ),
             SizedBox(height: 70.h),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  'phone_number'.tr(), // Example text, replace as needed
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    fontFamily: 'Cairo',
-                    fontWeight: FontWeight.w500,
-                    fontStyle: FontStyle.normal,
-                    fontSize: 20,
-                    height: 1.0, // 100% line height
-                    letterSpacing: 0.0,
+            Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        'phone_number'.tr(), // Example text, replace as needed
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          fontWeight: FontWeight.w500,
+                          fontStyle: FontStyle.normal,
+                          fontSize: 20,
+                          height: 1.0, // 100% line height
+                          letterSpacing: 0.0,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
-            SizedBox(height: 20.h),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: CustomPhoneInput(
-                onInputChanged: (value) {
-                  phoneController.text = value.phoneNumber
-                      .toString()
-                      .replaceAll('+20', '');
-                },
-                borderColor: Color(0xFFE0E0E0),
+                  SizedBox(height: 20.h),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: CustomPhoneInput(
+                      onInputChanged: (value) {
+                        phoneController.text = value.phoneNumber
+                            .toString()
+                            .replaceAll('+20', '');
+                      },
+                      borderColor: Color(0xFFE0E0E0),
+                    ),
+                  ),
+                ],
               ),
             ),
             Spacer(),
@@ -127,21 +136,53 @@ class _UserAuthLoginScreenState extends State<UserAuthLoginScreen> {
                       borderRadius: BorderRadius.circular(15),
                     ),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
+                    // Manual validation for phone number
+                    String phoneNumber = phoneController.text.trim();
+                    if (phoneNumber.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('phone_number_required'.tr()),
+                          backgroundColor: Colors.red,
+                          duration: Duration(seconds: 3),
+                        ),
+                      );
+                      return;
+                    }
+                    if (phoneNumber.length < 8) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('phone_number_invalid'.tr()),
+                          backgroundColor: Colors.red,
+                          duration: Duration(seconds: 3),
+                        ),
+                      );
+                      return;
+                    }
+
                     // NavigationService().pushWidget(UserOtpScreen());
                     log('phone: ${phoneController.text.trim()}');
                     showDialog(
                       context: context,
                       builder: (context) => AppConstants.loadingScreen(),
                     );
-                    context.read<AuthViewModel>().login(
+                    final response = await context.read<AuthViewModel>().login(
                       phoneController.text.trim(),
                     );
-
-                    Future.delayed(const Duration(seconds: 2), () {
+                    if (response?.status == "success") {
                       Navigator.pop(context);
-                      NavigationService().pushWidget(UserLocationScreen());
-                    });
+                      NavigationService().pushWidget(
+                        UserOtpScreen(phone: phoneNumber, code: response!.code),
+                      );
+                    } else {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(response?.message ?? ''),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   },
                   child: Text(
                     'login'.tr(),

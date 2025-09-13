@@ -1,9 +1,12 @@
 import 'package:aleef/modules/user/services/views/store_screens/finish_order_screen.dart';
+import 'package:aleef/modules/user/services/view_models/cart_view_model.dart';
+import 'package:aleef/modules/user/services/models/cart_item_model.dart';
 import 'package:aleef/shared/assets/app_color.dart';
 import 'package:aleef/shared/routes/navigation_routes.dart';
-import 'package:aleef/shared/widgets/quantity_selector.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -13,8 +16,6 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
-  int item1Quantity = 1;
-  int item2Quantity = 1;
   String selectedDeliveryMethod = 'شركة بوسطة';
   bool isDeliveryExpanded = false;
 
@@ -30,7 +31,7 @@ class _CartScreenState extends State<CartScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'سلة التسوق',
+          'shopping_cart'.tr(),
           style: TextStyle(
             fontFamily: 'Cairo',
             fontWeight: FontWeight.w700,
@@ -45,176 +46,201 @@ class _CartScreenState extends State<CartScreen> {
         centerTitle: true,
         actions: [],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Shopping Cart Items Section
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
-            child: _buildCartItem(
-              image: 'assets/images/png/product_item.png',
-              name: 'طعام قطط رويال',
-              price: '12.99',
-              quantity: item1Quantity,
-              onQuantityChanged: (value) {
-                setState(() {
-                  item1Quantity = value;
-                });
-              },
-              onDelete: () {},
-            ),
-          ),
-          SizedBox(height: 10),
-          // Item 2: Beso Wet Cat Food
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10.w),
-            child: _buildCartItem(
-              image: 'assets/images/png/product_item.png',
-              name: 'طعام قطط رطب',
-              price: '10.00',
-              quantity: item2Quantity,
-              onQuantityChanged: (value) {
-                setState(() {
-                  item2Quantity = value;
-                });
-              },
-              onDelete: () {},
-            ),
-          ),
-          SizedBox(height: 20),
-
-          // Delivery Section
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10.w),
-            child: Text(
-              'التوصيل',
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
-          SizedBox(height: 12),
-          Container(
-            padding: EdgeInsets.all(16),
-            margin: EdgeInsets.symmetric(horizontal: 10.w),
-            decoration: BoxDecoration(
-              color: Color(0xFFF8F6F2),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColor.primary, width: 1),
-            ),
-            child: Column(
-              children: [
-                InkWell(
-                  onTap: () {
-                    setState(() {
-                      isDeliveryExpanded = !isDeliveryExpanded;
-                    });
-                  },
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'أختر طريقة التوصيل',
-                        style: TextStyle(color: Colors.black87, fontSize: 16),
-                      ),
-                      Icon(
-                        isDeliveryExpanded
-                            ? Icons.keyboard_arrow_up
-                            : Icons.keyboard_arrow_down,
-                        color: AppColor.primary,
-                      ),
-                    ],
+      body: Consumer<CartViewModel>(
+        builder: (context, cartViewModel, child) {
+          if (cartViewModel.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.shopping_cart_outlined,
+                    size: 100,
+                    color: Colors.grey[400],
                   ),
-                ),
-                if (isDeliveryExpanded) ...[
-                  Divider(height: 20),
-                  _buildDeliveryOption('شركة بوسطة', true),
-                  SizedBox(height: 8),
-                  _buildDeliveryOption('استلم الطلب بنفسك من المتجر', false),
+                  SizedBox(height: 20),
+                  Text(
+                    'cart_is_empty'.tr(),
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey[600],
+                      fontFamily: 'Cairo',
+                    ),
+                  ),
                 ],
-              ],
-            ),
-          ),
-
-          Spacer(),
-
-          // Payment Summary Section
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10.w),
-            child: Text(
-              'ملخص الدفع',
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
               ),
-            ),
-          ),
-          SizedBox(height: 10),
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Color(0xFFF8F6F2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: [
-                _buildSummaryRow(
-                  'مجموع السلة',
-                  '${(item1Quantity * 12.99 + item2Quantity * 10.00).toStringAsFixed(2)} ريال',
-                ),
-                SizedBox(height: 12),
-                _buildSummaryRow('توصيل', '5.00 ريال'),
-                Divider(height: 20),
-                _buildSummaryRow(
-                  'المبلغ الإجمالي',
-                  '${(item1Quantity * 12.99 + item2Quantity * 10.00 + 5.00).toStringAsFixed(2)} ريال',
-                  isTotal: true,
-                ),
-                SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      NavigationService().pushWidget(FinishOrderScreen());
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColor.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Shopping Cart Items Section
+              Expanded(
+                child: ListView.builder(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 10.w,
+                    vertical: 10.h,
+                  ),
+                  itemCount: cartViewModel.cartItems.length,
+                  itemBuilder: (context, index) {
+                    final cartItem = cartViewModel.cartItems[index];
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: 10.h),
+                      child: _buildCartItem(
+                        cartItem: cartItem,
+                        onQuantityChanged: (value) {
+                          cartViewModel.updateQuantity(
+                            cartItem.product.id,
+                            value,
+                          );
+                        },
+                        onDelete: () {
+                          cartViewModel.removeFromCart(cartItem.product.id);
+                        },
                       ),
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      'تنفيذ الطلب',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    );
+                  },
+                ),
+              ),
+              SizedBox(height: 20),
+
+              // Delivery Section
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 10.w),
+                child: Text(
+                  'delivery'.tr(),
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    fontFamily: 'Cairo',
                   ),
                 ),
-              ],
-            ),
-          ),
+              ),
+              SizedBox(height: 12),
+              Container(
+                padding: EdgeInsets.all(16),
+                margin: EdgeInsets.symmetric(horizontal: 10.w),
+                decoration: BoxDecoration(
+                  color: Color(0xFFF8F6F2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColor.primary, width: 1),
+                ),
+                child: Column(
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          isDeliveryExpanded = !isDeliveryExpanded;
+                        });
+                      },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'choose_delivery_method'.tr(),
+                            style: TextStyle(
+                              color: Colors.black87,
+                              fontSize: 16,
+                              fontFamily: 'Cairo',
+                            ),
+                          ),
+                          Icon(
+                            isDeliveryExpanded
+                                ? Icons.keyboard_arrow_up
+                                : Icons.keyboard_arrow_down,
+                            color: AppColor.primary,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (isDeliveryExpanded) ...[
+                      Divider(height: 20),
+                      _buildDeliveryOption('bosta_company'.tr(), true),
+                      SizedBox(height: 8),
+                      _buildDeliveryOption('pickup_from_store'.tr(), false),
+                    ],
+                  ],
+                ),
+              ),
 
-          SizedBox(height: 30),
+              Spacer(),
 
-          // Checkout Button
-        ],
+              // Payment Summary Section
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 10.w),
+                child: Text(
+                  'payment_summary'.tr(),
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    fontFamily: 'Cairo',
+                  ),
+                ),
+              ),
+              SizedBox(height: 10),
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Color(0xFFF8F6F2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    _buildSummaryRow(
+                      'cart_total'.tr(),
+                      '${cartViewModel.totalPrice.toStringAsFixed(2)} ريال',
+                    ),
+                    SizedBox(height: 12),
+                    _buildSummaryRow('delivery_fee'.tr(), '5.00 ريال'),
+                    Divider(height: 20),
+                    _buildSummaryRow(
+                      'total_amount'.tr(),
+                      '${(cartViewModel.totalPrice + 5.00).toStringAsFixed(2)} ريال',
+                      isTotal: true,
+                    ),
+                    SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          NavigationService().pushWidget(FinishOrderScreen());
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColor.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          'place_order'.tr(),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Cairo',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 30),
+            ],
+          );
+        },
       ),
     );
   }
 
   Widget _buildCartItem({
-    required String image,
-    required String name,
-    required String price,
-    required int quantity,
+    required CartItemModel cartItem,
     required Function(int) onQuantityChanged,
     required VoidCallback onDelete,
   }) {
@@ -263,9 +289,12 @@ class _CartScreenState extends State<CartScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.add, color: Colors.white),
+                    GestureDetector(
+                      onTap: () => onQuantityChanged(cartItem.quantity + 1),
+                      child: Icon(Icons.add, color: Colors.white),
+                    ),
                     Text(
-                      '1',
+                      cartItem.quantity.toString(),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white,
@@ -273,7 +302,16 @@ class _CartScreenState extends State<CartScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    Icon(Icons.remove, color: Colors.white),
+                    GestureDetector(
+                      onTap: () {
+                        if (cartItem.quantity > 1) {
+                          onQuantityChanged(cartItem.quantity - 1);
+                        } else {
+                          onDelete();
+                        }
+                      },
+                      child: Icon(Icons.remove, color: Colors.white),
+                    ),
                   ],
                 ),
               ),
@@ -288,7 +326,7 @@ class _CartScreenState extends State<CartScreen> {
             children: [
               SizedBox(height: 10.h),
               Text(
-                name,
+                cartItem.product.name,
                 style: TextStyle(
                   fontFamily: 'Cairo',
                   fontWeight: FontWeight.w600,
@@ -301,7 +339,7 @@ class _CartScreenState extends State<CartScreen> {
               ),
               SizedBox(height: 45.h),
               Text(
-                '$price ريال',
+                '${cartItem.product.price} ريال',
                 textAlign: TextAlign.right,
                 style: TextStyle(
                   fontFamily: 'Poppins',
@@ -323,7 +361,15 @@ class _CartScreenState extends State<CartScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Image.asset(image),
+            child: cartItem.product.image.isNotEmpty
+                ? Image.network(
+                    cartItem.product.image,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Image.asset('assets/images/png/product_item.png');
+                    },
+                  )
+                : Image.asset('assets/images/png/product_item.png'),
           ),
         ],
       ),

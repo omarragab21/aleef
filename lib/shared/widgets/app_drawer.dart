@@ -2,9 +2,13 @@ import 'package:aleef/modules/user/profile/views/edit_profile_screen.dart';
 import 'package:aleef/modules/user/services/views/store_screens/my_orders_screen.dart';
 import 'package:aleef/modules/user/services/views/vets_screens/my_appointments_screen.dart';
 import 'package:aleef/shared/routes/navigation_routes.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../modules/user/profile/view_models/profile_view_model.dart';
 import '../assets/app_color.dart';
 import '../assets/app_text_styles.dart';
 
@@ -16,6 +20,91 @@ class AppDrawer extends StatefulWidget {
 }
 
 class _AppDrawerState extends State<AppDrawer> {
+  final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    // Load profile data when drawer is initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProfileViewModel>().loadProfile();
+    });
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      // Show bottom sheet with options
+      showModalBottomSheet(
+        context: context,
+        builder: (BuildContext context) {
+          return SafeArea(
+            child: Wrap(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.camera_alt),
+                  title: Text('take_photo'.tr()),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _getImage(ImageSource.camera);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: Text('choose_from_gallery'.tr()),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _getImage(ImageSource.gallery);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.cancel),
+                  title: Text('cancel'.tr()),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${'error_choosing_image'.tr()}: $e')),
+      );
+    }
+  }
+
+  Future<void> _getImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        // Upload the image using ProfileViewModel
+        await context.read<ProfileViewModel>().updateProfileImage(image.path);
+
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('image_updated_successfully'.tr())),
+          );
+          await context.read<ProfileViewModel>().loadProfile();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${'error_uploading_image'.tr()}: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -35,62 +124,91 @@ class _AppDrawerState extends State<AppDrawer> {
   }
 
   Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          const SizedBox(height: 5),
-
-          // Title
-          Text(
-            'حسابي',
-            style: AppTextStyles.titleLarge.copyWith(
-              color: AppColor.title,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Profile picture with camera icon
-          Stack(
+    return Consumer<ProfileViewModel>(
+      builder: (context, profileViewModel, child) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
             children: [
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  image: const DecorationImage(
-                    image: AssetImage('assets/images/png/cat.jpg'),
-                    fit: BoxFit.cover,
-                  ),
+              const SizedBox(height: 5),
+
+              // Title
+              Text(
+                'حسابي',
+                style: AppTextStyles.titleLarge.copyWith(
+                  color: AppColor.title,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(
-                      0xFFF8FFD9,
-                    ), // Light yellow-green color (#F8FFD9)
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(5.0),
-                    child: SvgPicture.asset(
-                      'assets/images/svg/camera.svg',
-                      color: AppColor.primary,
+
+              const SizedBox(height: 24),
+
+              // Profile picture with camera icon
+              Stack(
+                children: [
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      image: profileViewModel.profile?.avatar != null
+                          ? DecorationImage(
+                              image: NetworkImage(
+                                profileViewModel.profile!.avatar!,
+                              ),
+                              fit: BoxFit.cover,
+                            )
+                          : const DecorationImage(
+                              image: AssetImage('assets/images/png/cat.jpg'),
+                              fit: BoxFit.cover,
+                            ),
                     ),
                   ),
-                ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: _pickImage,
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(
+                            0xFFF8FFD9,
+                          ), // Light yellow-green color (#F8FFD9)
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(5.0),
+                          child: SvgPicture.asset(
+                            'assets/images/svg/camera.svg',
+                            color: AppColor.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
+
+              // User name display
+
+              // Loading indicator
+              if (profileViewModel.isLoading) ...[
+                const SizedBox(height: 16),
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    color: AppColor.primary,
+                    strokeWidth: 2,
+                  ),
+                ),
+              ],
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -101,26 +219,26 @@ class _AppDrawerState extends State<AppDrawer> {
         child: Column(
           children: [
             _buildMenuItem(
-              icon: Icons.person,
+              icon: 'assets/images/svg/user.svg',
               title: 'حسابي',
               onTap: () {
                 NavigationService().pushWidget(EditProfileScreen());
               },
             ),
             _buildMenuItem(
-              icon: Icons.credit_card,
+              icon: 'assets/images/svg/payment_card.svg',
               title: 'بطاقات الإئتمان',
               onTap: () {},
             ),
             _buildMenuItem(
-              icon: Icons.calendar_today,
+              icon: 'assets/images/svg/calendar_day.svg',
               title: 'حجوزاتي',
               onTap: () {
                 NavigationService().pushWidget(MyAppointmentsScreen());
               },
             ),
             _buildMenuItem(
-              icon: Icons.shopping_bag,
+              icon: 'assets/images/svg/shopping_bags.svg',
               title: 'طلباتي',
               onTap: () {
                 NavigationService().pushWidget(MyOrdersScreen());
@@ -128,17 +246,17 @@ class _AppDrawerState extends State<AppDrawer> {
             ),
             _buildLanguageMenuItem(),
             _buildMenuItem(
-              icon: Icons.headset,
+              icon: 'assets/images/svg/headset_mic.svg',
               title: 'أتصل بنا',
               onTap: () {},
             ),
             _buildMenuItem(
-              icon: Icons.description,
+              icon: 'assets/images/svg/list_clipboard.svg',
               title: 'الشروط والأحكام',
               onTap: () {},
             ),
             _buildMenuItem(
-              icon: Icons.lock,
+              icon: 'assets/images/svg/lock.svg',
               title: 'سياسة الخصوصية',
               onTap: () {},
             ),
@@ -152,7 +270,7 @@ class _AppDrawerState extends State<AppDrawer> {
   }
 
   Widget _buildMenuItem({
-    required IconData icon,
+    required String icon,
     required String title,
     required VoidCallback onTap,
     bool isLogout = false,
@@ -188,10 +306,11 @@ class _AppDrawerState extends State<AppDrawer> {
                 ),
               ),
               const SizedBox(width: 5),
-              Icon(
+              SvgPicture.asset(
                 icon,
                 color: isLogout ? Colors.red : AppColor.primary,
-                size: 24,
+                width: 24,
+                height: 24,
               ),
             ],
           ),
@@ -243,7 +362,7 @@ class _AppDrawerState extends State<AppDrawer> {
 
   Widget _buildLogoutMenuItem() {
     return _buildMenuItem(
-      icon: Icons.logout,
+      icon: 'assets/images/svg/logout.svg',
       title: 'تسجيل الخروج',
       onTap: () {},
       isLogout: true,

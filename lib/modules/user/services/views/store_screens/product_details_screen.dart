@@ -1,3 +1,7 @@
+import 'package:aleef/modules/user/services/view_models/cart_view_model.dart';
+import 'package:aleef/modules/user/services/views/store_screens/cart_screen.dart';
+import 'package:aleef/shared/routes/navigation_routes.dart';
+import 'package:aleef/shared/widgets/cart_badge.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -5,6 +9,7 @@ import 'package:aleef/shared/assets/app_color.dart';
 import 'package:aleef/shared/assets/app_text_styles.dart';
 import 'package:aleef/shared/widgets/quantity_selector.dart';
 import 'package:aleef/modules/user/services/models/product_model.dart';
+import 'package:provider/provider.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
   final ProductModel? product;
@@ -27,13 +32,14 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     _product =
         widget.product ??
         ProductModel(
-          id: '1',
+          id: 1,
           name: 'طعام قطط رويال',
+          price: '12.99',
+          image: 'assets/images/png/product_item.png',
+          hasVariants: false,
           description:
               'طعام متكامل مصمم خصيصًا لتلبية احتياجات القطط البالغة. مصنوع من مكونات طبيعية عالية الجودة، ويحتوي على نسبة بروتين معتدلة لدعم الصحة العامة والعضلات، مع مذاق شهي يحبه القطط.',
           category: 'طعام الحيوانات',
-          price: 12.99,
-          imageUrl: 'assets/images/png/product_item.png',
           brand: 'ROYAL CANIN',
           isAvailable: true,
           stockQuantity: 50,
@@ -50,7 +56,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     // TODO: Implement add to cart functionality
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('تم إضافة $_quantity من ${_product.name} إلى السلة'),
+        content: Text(
+          'product_added_to_cart'
+              .tr()
+              .replaceAll('{quantity}', _quantity.toString())
+              .replaceAll('{productName}', _product.name),
+        ),
         backgroundColor: AppColor.primary,
         behavior: SnackBarBehavior.floating,
       ),
@@ -80,17 +91,32 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: SvgPicture.asset(
-              'assets/images/svg/shopping_cart.svg',
-              width: 28,
-              height: 28,
+            padding: const EdgeInsets.only(left: 2.0),
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Consumer<CartViewModel>(
+                builder: (context, cartViewModel, child) {
+                  return GestureDetector(
+                    onTap: () {
+                      NavigationService().pushWidget(CartScreen());
+                    },
+                    child: CartBadge(
+                      count: cartViewModel.itemCount,
+                      child: SvgPicture.asset(
+                        'assets/images/svg/shopping_cart.svg',
+                        width: 28,
+                        height: 28,
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
           SizedBox(width: 12),
         ],
       ),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,20 +132,35 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: _product.imageUrl != null
-                    ? Image.asset(
-                        _product.imageUrl!,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: AppColor.secondary,
-                            child: Icon(
-                              Icons.image_not_supported,
-                              size: 80,
-                              color: AppColor.lightGray,
-                            ),
-                          );
-                        },
-                      )
+                    ? _product.imageUrl!.startsWith('http')
+                          ? Image.network(
+                              _product.imageUrl!,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: AppColor.secondary,
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    size: 80,
+                                    color: AppColor.lightGray,
+                                  ),
+                                );
+                              },
+                            )
+                          : Image.asset(
+                              _product.imageUrl!,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: AppColor.secondary,
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    size: 80,
+                                    color: AppColor.lightGray,
+                                  ),
+                                );
+                              },
+                            )
                     : Container(
                         color: AppColor.secondary,
                         child: Icon(
@@ -135,7 +176,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
             // Product Name
             Text(
-              _product.name ?? '',
+              _product.name,
               style: AppTextStyles.displaySmall.copyWith(
                 color: AppColor.title,
                 fontWeight: FontWeight.w700,
@@ -162,7 +203,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
                 // Price
                 Text(
-                  '${_product.price?.toStringAsFixed(2) ?? '0.00'} ريال',
+                  '${_product.price} ريال',
                   style: const TextStyle(
                     fontFamily: 'Cairo',
                     fontWeight: FontWeight.w700,
@@ -181,7 +222,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               ],
             ),
 
-            const SizedBox(height: 40),
+            const Spacer(),
 
             // Add to Cart Button
             SizedBox(

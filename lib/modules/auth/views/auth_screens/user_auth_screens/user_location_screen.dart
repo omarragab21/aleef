@@ -1,6 +1,10 @@
 import 'package:aleef/modules/user/main/views/main_screen.dart';
 import 'package:aleef/shared/assets/app_color.dart';
 import 'package:aleef/shared/routes/navigation_routes.dart';
+import 'package:aleef/modules/auth/view_models/auth_view_model.dart';
+import 'package:aleef/modules/auth/models/governorates_model.dart';
+import 'package:aleef/modules/auth/models/cities_model.dart';
+import 'package:aleef/modules/auth/repository/auth_api_repository.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -14,58 +18,84 @@ class UserLocationScreen extends StatefulWidget {
 }
 
 class _UserLocationScreenState extends State<UserLocationScreen> {
-  // Oman governorates list
-  final List<String> omanGovernorates = [
-    'Muscat',
-    'Dhofar',
-    'Musandam',
-    'Al Buraimi',
-    'Ad Dakhiliyah',
-    'North Al Batinah',
-    'South Al Batinah',
-    'South Ash Sharqiyah',
-    'North Ash Sharqiyah',
-    'Al Dhahirah',
-    'Al Wusta',
-  ];
+  late AuthViewModel _authViewModel;
+  List<Governorate> governorates = [];
+  List<City> cities = [];
+  bool isLoadingGovernorates = false;
+  bool isLoadingCities = false;
+  String? selectedGovernorateId;
+  String? selectedGovernorateName;
+  String? selectedCityId;
+  String? selectedCityName;
 
-  final List<String> omanAreasOrStates = [
-    'Al Seeb',
-    'Bawshar',
-    'Muttrah',
-    'Al Amerat',
-    'Salalah',
-    'Taqah',
-    'Mirbat',
-    'Khasab',
-    'Dibba',
-    'Madha',
-    'Al Buraimi City',
-    'Mahdah',
-    'Ibri',
-    'Yanqul',
-    'Nizwa',
-    'Bahla',
-    'Adam',
-    'Sohar',
-    'Shinas',
-    'Liwa',
-    'Saham',
-    'Barka',
-    'Nakhal',
-    'Al Khaburah',
-    'Al Suwaiq',
-    'Sur',
-    'Ibra',
-    'Al Mudhaibi',
-    'Haima',
-    'Duqm',
-    'Mahout',
-    // Add more as needed
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _authViewModel = AuthViewModel(AuthApiRepository());
+    _loadGovernorates();
+  }
 
-  String? selectedGovernorate;
-  String? selectedAreaOrState;
+  Future<void> _loadGovernorates() async {
+    setState(() {
+      isLoadingGovernorates = true;
+    });
+
+    try {
+      final response = await _authViewModel.getGovernorates();
+      if (response.status == 'success') {
+        setState(() {
+          governorates = response.data;
+          isLoadingGovernorates = false;
+        });
+      } else {
+        setState(() {
+          isLoadingGovernorates = false;
+        });
+        _showErrorSnackBar(response.message);
+      }
+    } catch (e) {
+      setState(() {
+        isLoadingGovernorates = false;
+      });
+      _showErrorSnackBar('Failed to load governorates');
+    }
+  }
+
+  Future<void> _loadCities(int governorateId) async {
+    setState(() {
+      isLoadingCities = true;
+      cities = [];
+      selectedCityId = null;
+      selectedCityName = null;
+    });
+
+    try {
+      final response = await _authViewModel.getCities(governorateId);
+      if (response.status == 'success') {
+        setState(() {
+          cities = response.data;
+          isLoadingCities = false;
+        });
+      } else {
+        setState(() {
+          isLoadingCities = false;
+        });
+        _showErrorSnackBar(response.message);
+      }
+    } catch (e) {
+      setState(() {
+        isLoadingCities = false;
+      });
+      _showErrorSnackBar('Failed to load cities');
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -126,66 +156,82 @@ class _UserLocationScreenState extends State<UserLocationScreen> {
             ),
             SizedBox(height: 20.h),
 
-            StatefulBuilder(
-              builder: (context, setState) {
-                return Center(
-                  child: Container(
-                    width: double.infinity,
-                    height: 55,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 9,
-                      horizontal: 13,
-                    ),
-                    margin: const EdgeInsets.symmetric(horizontal: 16.0),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFA4D4AE),
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(
-                        color: const Color(0xFF6D9773),
-                        width: 2,
-                      ),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: selectedGovernorate,
-                        isExpanded: true,
-                        icon: const Icon(
-                          Icons.keyboard_arrow_down,
-                          color: Color(0xFF2D2D2D),
-                        ),
-                        style: const TextStyle(
-                          fontFamily: 'Cairo',
-                          fontWeight: FontWeight.w500,
-                          fontSize: 16,
-                          color: Color(0xFF2D2D2D),
-                        ),
-                        hint: Text(
-                          'choose_location'.tr(),
-                          style: const TextStyle(
+            Center(
+              child: Container(
+                width: double.infinity,
+                height: 55,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 9,
+                  horizontal: 13,
+                ),
+                margin: const EdgeInsets.symmetric(horizontal: 16.0),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFA4D4AE),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: const Color(0xFF6D9773), width: 2),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: selectedGovernorateId,
+                    isExpanded: true,
+                    icon: isLoadingGovernorates
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFF2D2D2D),
+                              ),
+                            ),
+                          )
+                        : const Icon(
+                            Icons.keyboard_arrow_down,
                             color: Color(0xFF2D2D2D),
-                            fontFamily: 'Cairo',
-                            fontWeight: FontWeight.w500,
-                            fontSize: 16,
                           ),
-                        ),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            selectedGovernorate = newValue;
-                          });
-                        },
-                        items: omanGovernorates.map<DropdownMenuItem<String>>((
-                          String value,
-                        ) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
+                    style: const TextStyle(
+                      fontFamily: 'Cairo',
+                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
+                      color: Color(0xFF2D2D2D),
+                    ),
+                    hint: Text(
+                      isLoadingGovernorates
+                          ? 'loading_governorates'.tr()
+                          : 'choose_location'.tr(),
+                      style: const TextStyle(
+                        color: Color(0xFF2D2D2D),
+                        fontFamily: 'Cairo',
+                        fontWeight: FontWeight.w500,
+                        fontSize: 16,
                       ),
                     ),
+                    onChanged: isLoadingGovernorates
+                        ? null
+                        : (String? newValue) {
+                            if (newValue != null) {
+                              setState(() {
+                                selectedGovernorateId = newValue;
+                                selectedGovernorateName = governorates
+                                    .firstWhere(
+                                      (g) => g.id.toString() == newValue,
+                                    )
+                                    .name;
+                              });
+                              _loadCities(int.parse(newValue));
+                            }
+                          },
+                    items: governorates.map<DropdownMenuItem<String>>((
+                      Governorate governorate,
+                    ) {
+                      return DropdownMenuItem<String>(
+                        value: governorate.id.toString(),
+                        child: Text(governorate.name),
+                      );
+                    }).toList(),
                   ),
-                );
-              },
+                ),
+              ),
             ),
             SizedBox(height: 20.h),
             Padding(
@@ -204,66 +250,81 @@ class _UserLocationScreenState extends State<UserLocationScreen> {
               ),
             ),
             SizedBox(height: 20.h),
-            StatefulBuilder(
-              builder: (context, setState) {
-                return Center(
-                  child: Container(
-                    width: double.infinity,
-                    height: 55,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 9,
-                      horizontal: 13,
-                    ),
-                    margin: const EdgeInsets.symmetric(horizontal: 16.0),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFA4D4AE),
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(
-                        color: const Color(0xFF6D9773),
-                        width: 2,
-                      ),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: selectedAreaOrState,
-                        isExpanded: true,
-                        icon: const Icon(
-                          Icons.keyboard_arrow_down,
-                          color: Color(0xFF2D2D2D),
-                        ),
-                        style: const TextStyle(
-                          fontFamily: 'Cairo',
-                          fontWeight: FontWeight.w500,
-                          fontSize: 16,
-                          color: Color(0xFF2D2D2D),
-                        ),
-                        hint: Text(
-                          'choose_location'.tr(),
-                          style: const TextStyle(
+            Center(
+              child: Container(
+                width: double.infinity,
+                height: 55,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 9,
+                  horizontal: 13,
+                ),
+                margin: const EdgeInsets.symmetric(horizontal: 16.0),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFA4D4AE),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: const Color(0xFF6D9773), width: 2),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: selectedCityId,
+                    isExpanded: true,
+                    icon: isLoadingCities
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFF2D2D2D),
+                              ),
+                            ),
+                          )
+                        : const Icon(
+                            Icons.keyboard_arrow_down,
                             color: Color(0xFF2D2D2D),
-                            fontFamily: 'Cairo',
-                            fontWeight: FontWeight.w500,
-                            fontSize: 16,
                           ),
-                        ),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            selectedAreaOrState = newValue;
-                          });
-                        },
-                        items: omanAreasOrStates.map<DropdownMenuItem<String>>((
-                          String value,
-                        ) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
+                    style: const TextStyle(
+                      fontFamily: 'Cairo',
+                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
+                      color: Color(0xFF2D2D2D),
+                    ),
+                    hint: Text(
+                      selectedGovernorateId == null
+                          ? 'select_governorate_first'.tr()
+                          : isLoadingCities
+                          ? 'loading_cities'.tr()
+                          : 'choose_location'.tr(),
+                      style: const TextStyle(
+                        color: Color(0xFF2D2D2D),
+                        fontFamily: 'Cairo',
+                        fontWeight: FontWeight.w500,
+                        fontSize: 16,
                       ),
                     ),
+                    onChanged: selectedGovernorateId == null || isLoadingCities
+                        ? null
+                        : (String? newValue) {
+                            if (newValue != null) {
+                              setState(() {
+                                selectedCityId = newValue;
+                                selectedCityName = cities
+                                    .firstWhere(
+                                      (c) => c.id.toString() == newValue,
+                                    )
+                                    .name;
+                              });
+                            }
+                          },
+                    items: cities.map<DropdownMenuItem<String>>((City city) {
+                      return DropdownMenuItem<String>(
+                        value: city.id.toString(),
+                        child: Text(city.name),
+                      );
+                    }).toList(),
                   ),
-                );
-              },
+                ),
+              ),
             ),
             Spacer(),
             Align(
@@ -291,9 +352,21 @@ class _UserLocationScreenState extends State<UserLocationScreen> {
                       borderRadius: BorderRadius.circular(15),
                     ),
                   ),
-                  onPressed: () {
-                    NavigationService().pushReplacementWidget(MainScreen());
-                  },
+                  onPressed:
+                      selectedGovernorateId != null && selectedCityId != null
+                      ? () {
+                          // TODO: Save the selected location data
+                          print(
+                            'Selected Governorate: $selectedGovernorateName (ID: $selectedGovernorateId)',
+                          );
+                          print(
+                            'Selected City: $selectedCityName (ID: $selectedCityId)',
+                          );
+                          NavigationService().pushReplacementWidget(
+                            MainScreen(),
+                          );
+                        }
+                      : null,
                   child: Text(
                     'save_location'.tr(),
                     style: TextStyle(

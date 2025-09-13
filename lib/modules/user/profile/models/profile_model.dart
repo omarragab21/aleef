@@ -1,9 +1,12 @@
 class ProfileModel {
-  final String? id;
+  final int? id;
+  final String? name;
   final String? firstName;
   final String? lastName;
   final String? email;
   final String? phone;
+  final String? avatar;
+  final String? gender;
   final String? address;
   final String? city;
   final String? country;
@@ -14,10 +17,13 @@ class ProfileModel {
 
   ProfileModel({
     this.id,
+    this.name,
     this.firstName,
     this.lastName,
     this.email,
     this.phone,
+    this.avatar,
+    this.gender,
     this.address,
     this.city,
     this.country,
@@ -30,10 +36,13 @@ class ProfileModel {
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
     return ProfileModel(
       id: json['id'],
+      name: json['name'],
       firstName: json['first_name'],
       lastName: json['last_name'],
       email: json['email'],
       phone: json['phone'],
+      avatar: json['avatar'],
+      gender: json['gender'],
       address: json['address'],
       city: json['city'],
       country: json['country'],
@@ -53,10 +62,13 @@ class ProfileModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'name': name,
       'first_name': firstName,
       'last_name': lastName,
       'email': email,
       'phone': phone,
+      'avatar': avatar,
+      'gender': gender,
       'address': address,
       'city': city,
       'country': country,
@@ -67,5 +79,5 @@ class ProfileModel {
     };
   }
 
-  String get fullName => '${firstName ?? ''} ${lastName ?? ''}'.trim();
+  String get fullName => name ?? '${firstName ?? ''} ${lastName ?? ''}'.trim();
 }

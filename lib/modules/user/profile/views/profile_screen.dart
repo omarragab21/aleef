@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../view_models/profile_view_model.dart';
@@ -24,7 +25,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: Text('profile'.tr()),
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
@@ -54,7 +55,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => viewModel.loadProfile(),
-                    child: const Text('Retry'),
+                    child: Text('retry'.tr()),
                   ),
                 ],
               ),
@@ -63,7 +64,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           final profile = viewModel.profile;
           if (profile == null) {
-            return const Center(child: Text('No profile data available.'));
+            return Center(child: Text('no_profile_data_available'.tr()));
           }
 
           return SingleChildScrollView(
@@ -147,7 +148,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: const Text('Edit Profile'),
+                    child: Text('edit_profile'.tr()),
                   ),
                 ),
 
@@ -160,7 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: const Text('Logout'),
+                    child: Text('logout'.tr()),
                   ),
                 ),
               ],
@@ -214,19 +215,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
+        title: Text('logout'.tr()),
+        content: Text('logout_confirmation'.tr()),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text('cancel'.tr()),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
               context.read<ProfileViewModel>().logout();
             },
-            child: const Text('Logout'),
+            child: Text('logout'.tr()),
           ),
         ],
       ),

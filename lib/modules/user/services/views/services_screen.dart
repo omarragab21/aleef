@@ -1,3 +1,5 @@
+import 'package:aleef/modules/user/services/views/grommer_screen/grommer_screen.dart';
+import 'package:aleef/modules/user/services/views/hotels_screen/hotels_screen.dart';
 import 'package:aleef/modules/user/services/views/store_screens/product_screen.dart';
 import 'package:aleef/modules/user/services/views/vets_screens/vets_screen.dart';
 import 'package:aleef/shared/routes/navigation_routes.dart';
@@ -5,7 +7,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../view_models/services_view_model.dart';
-import '../models/service_model.dart';
 import 'package:aleef/shared/assets/app_color.dart';
 
 class ServicesScreen extends StatefulWidget {
@@ -20,9 +21,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
   void initState() {
     super.initState();
     // Load services when screen initializes
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ServicesViewModel>().loadServices();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {});
   }
 
   @override
@@ -194,6 +193,12 @@ class _ServicesScreenState extends State<ServicesScreen> {
     }
     if (category == 'vets') {
       NavigationService().pushWidget(VetsScreen());
+    }
+    if (category == 'hotel') {
+      NavigationService().pushWidget(HotelsScreen());
+    }
+    if (category == 'groomer') {
+      NavigationService().pushWidget(GrommerScreen());
     }
   }
 }

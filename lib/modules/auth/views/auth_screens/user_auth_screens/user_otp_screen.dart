@@ -1,4 +1,8 @@
+import 'dart:developer';
+
+import 'package:aleef/modules/auth/view_models/auth_view_model.dart';
 import 'package:aleef/modules/auth/views/auth_screens/user_auth_screens/user_auth_login.dart';
+import 'package:aleef/modules/auth/views/auth_screens/user_auth_screens/user_location_screen.dart';
 import 'package:aleef/shared/assets/app_color.dart';
 import 'package:aleef/shared/routes/navigation_routes.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -9,9 +13,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pinput/pinput.dart';
 import 'dart:async';
 
+import 'package:provider/provider.dart';
+
 class UserOtpScreen extends StatefulWidget {
   final String phone;
-  const UserOtpScreen({super.key, required this.phone});
+  final String? code;
+  const UserOtpScreen({super.key, required this.phone, this.code});
 
   @override
   State<UserOtpScreen> createState() => _UserOtpScreenState();
@@ -27,6 +34,9 @@ class _UserOtpScreenState extends State<UserOtpScreen> {
     super.initState();
     _countdownNotifier = ValueNotifier<int>(_initialSeconds);
     _startTimer();
+    if (widget.code != null) {
+      log('widget.code: ${widget.code}');
+    }
   }
 
   void _startTimer() {
@@ -62,12 +72,14 @@ class _UserOtpScreenState extends State<UserOtpScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
+      body: SingleChildScrollView(
+        scrollDirection: Axis.vertical,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
+            SizedBox(height: MediaQuery.of(context).padding.top),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,7 +262,7 @@ class _UserOtpScreenState extends State<UserOtpScreen> {
                 ),
               ),
             ),
-            Spacer(),
+            SizedBox(height: 50.h),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: SizedBox(
@@ -264,10 +276,20 @@ class _UserOtpScreenState extends State<UserOtpScreen> {
                       borderRadius: BorderRadius.circular(15),
                     ),
                   ),
-                  onPressed: () {
-                    NavigationService().pushReplacementWidget(
-                      UserAuthLoginScreen(),
-                    );
+                  onPressed: () async {
+                    final response = await context
+                        .read<AuthViewModel>()
+                        .verifyOtp(widget.phone, widget.code!);
+                    if (response['status'] == "success") {
+                      log('response: $response');
+                      NavigationService().pushReplacementWidget(
+                        UserLocationScreen(),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(response['message'])),
+                      );
+                    }
                   },
                   child: Text(
                     'confirm_code'.tr(),
@@ -280,7 +302,7 @@ class _UserOtpScreenState extends State<UserOtpScreen> {
                 ),
               ),
             ),
-            Spacer(),
+            SizedBox(height: 20.h),
           ],
         ),
       ),

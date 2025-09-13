@@ -24,7 +24,6 @@ class UserAuthRegister extends StatefulWidget {
 
 class _UserAuthRegisterState extends State<UserAuthRegister> {
   File? _selectedProfileImage;
-  final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
 
@@ -40,9 +39,12 @@ class _UserAuthRegisterState extends State<UserAuthRegister> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
+        child: GestureDetector(
+          onDoubleTap: () {
+            // Dismiss keyboard on double tap
+            FocusScope.of(context).unfocus();
+          },
+          child: SingleChildScrollView(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,25 +139,6 @@ class _UserAuthRegisterState extends State<UserAuthRegister> {
                     padding: const EdgeInsets.symmetric(horizontal: 15),
                     child: TextFormField(
                       controller: _nameController,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'full_name_required'.tr();
-                        }
-                        if (value.trim().length < 3) {
-                          return 'full_name_min_length'.tr();
-                        }
-                        if (value.trim().length > 50) {
-                          return 'full_name_max_length'.tr();
-                        }
-                        // Check if name contains only letters, spaces, and Arabic characters
-                        final nameRegex = RegExp(
-                          r'^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFa-zA-Z\s]+$',
-                        );
-                        if (!nameRegex.hasMatch(value.trim())) {
-                          return 'full_name_invalid'.tr();
-                        }
-                        return null;
-                      },
                       decoration: InputDecoration(
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -175,20 +158,6 @@ class _UserAuthRegisterState extends State<UserAuthRegister> {
                             width: 2,
                           ),
                         ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: const BorderSide(
-                            color: Colors.red,
-                            width: 2,
-                          ),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: const BorderSide(
-                            color: Colors.red,
-                            width: 2,
-                          ),
-                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(15),
                           borderSide: const BorderSide(
@@ -198,10 +167,6 @@ class _UserAuthRegisterState extends State<UserAuthRegister> {
                         ),
                         fillColor: Colors.white,
                         filled: true,
-                        errorStyle: const TextStyle(
-                          color: Colors.red,
-                          fontSize: 12,
-                        ),
                       ),
                       style: const TextStyle(fontSize: 18, color: Colors.black),
                       textInputAction: TextInputAction.next,
@@ -236,22 +201,6 @@ class _UserAuthRegisterState extends State<UserAuthRegister> {
                     onInputValidated: (bool isValid) {
                       // Handle validation
                       print('Phone validation: $isValid');
-                    },
-                    validator: (String? value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'phone_number_required'.tr();
-                      }
-                      if (value.length < 8) {
-                        return 'phone_number_invalid'.tr();
-                      }
-                      // Check if phone contains only numbers
-                      final phoneRegex = RegExp(r'^[0-9]+$');
-                      if (!phoneRegex.hasMatch(
-                        value.replaceAll(RegExp(r'[^0-9]'), ''),
-                      )) {
-                        return 'phone_number_invalid'.tr();
-                      }
-                      return null;
                     },
                     borderColor: Color(0xFFE0E0E0),
                   ),
@@ -336,79 +285,152 @@ class _UserAuthRegisterState extends State<UserAuthRegister> {
                         ),
                       ),
                       onPressed: () async {
-                        // Validate the form
-                        if (_formKey.currentState!.validate()) {
-                          // Form is valid, proceed with account creation
-                          log('Form is valid');
-                          log('Name: ${_nameController.text}');
-                          log('Phone: ${_phoneController.text}');
-                          showDialog(
-                            context: context,
-                            builder: (context) => AppConstants.loadingScreen(),
-                          );
-                          Map<String, dynamic> data = {
-                            'name': _nameController.text,
-                            'phone': _phoneController.text,
-                          };
-                          log('data: $data');
-                          if (_selectedProfileImage != null) {
-                            data['image'] = _selectedProfileImage!.path;
-                            // TODO: Upload image to server before proceeding
-                            log('data: $data');
-                            final response = await context
-                                .read<AuthViewModel>()
-                                .register(data);
-                            log('response: $response');
-                            Navigator.pop(context);
-                            if (response['status'] == "success") {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(response['message']),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                              NavigationService().pushReplacementWidget(
-                                UserOtpScreen(phone: _phoneController.text),
-                              );
-                            } else {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(response['message']),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          } else {
-                            log('data: $data');
-                            final response = await context
-                                .read<AuthViewModel>()
-                                .register(data);
-                            log('response: $response');
-                            Navigator.pop(context);
-                            if (response['status'] == "success") {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(response['message'])),
-                              );
-                              NavigationService().pushReplacementWidget(
-                                UserOtpScreen(phone: _phoneController.text),
-                              );
-                            } else {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(response['message'])),
-                              );
-                            }
-                          }
-                        } else {
-                          // Form is invalid, show error message
-                          Navigator.pop(context);
+                        // Manual validation
+                        String name = _nameController.text.trim();
+                        String phone = _phoneController.text.trim();
+
+                        if (name.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('please_fill_all_fields'.tr()),
+                              content: Text('full_name_required'.tr()),
                               backgroundColor: Colors.red,
                             ),
                           );
+                          return;
+                        }
+
+                        if (name.length < 3) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('full_name_min_length'.tr()),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+
+                        if (name.length > 50) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('full_name_max_length'.tr()),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+
+                        // Check if name contains only letters, spaces, and Arabic characters
+                        final nameRegex = RegExp(
+                          r'^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFa-zA-Z\s]+$',
+                        );
+                        if (!nameRegex.hasMatch(name)) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('full_name_invalid'.tr()),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+
+                        if (phone.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('phone_number_required'.tr()),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+
+                        if (phone.length < 8) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('phone_number_invalid'.tr()),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+
+                        // Check if phone contains only numbers
+                        final phoneRegex = RegExp(r'^[0-9]+$');
+                        if (!phoneRegex.hasMatch(
+                          phone.replaceAll(RegExp(r'[^0-9]'), ''),
+                        )) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('phone_number_invalid'.tr()),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+
+                        // All validations passed, proceed with account creation
+                        log('Form is valid');
+                        log('Name: $name');
+                        log('Phone: $phone');
+                        showDialog(
+                          context: context,
+                          builder: (context) => AppConstants.loadingScreen(),
+                        );
+                        Map<String, dynamic> data = {
+                          'name': name,
+                          'phone': phone,
+                        };
+                        log('data: $data');
+                        if (_selectedProfileImage != null) {
+                          data['image'] = _selectedProfileImage!.path;
+                          // TODO: Upload image to server before proceeding
+                          log('data: $data');
+                          final response = await context
+                              .read<AuthViewModel>()
+                              .register(data);
+                          log('response: $response');
+                          Navigator.pop(context);
+                          if (response['status'] == "success") {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(response['message']),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                            NavigationService().pushReplacementWidget(
+                              UserOtpScreen(
+                                phone: phone,
+                                code: response['data']['otp'],
+                              ),
+                            );
+                          } else {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(response['message']),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        } else {
+                          log('data: $data');
+                          final response = await context
+                              .read<AuthViewModel>()
+                              .register(data);
+                          log('response: $response');
+                          Navigator.pop(context);
+                          if (response['status'] == "success") {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(response['message'])),
+                            );
+                            NavigationService().pushReplacementWidget(
+                              UserOtpScreen(phone: phone),
+                            );
+                          } else {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(response['message'])),
+                            );
+                          }
                         }
                       },
                       child: Text(

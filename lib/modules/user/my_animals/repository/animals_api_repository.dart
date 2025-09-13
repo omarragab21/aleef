@@ -1,79 +1,110 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:http/http.dart' as http;
 import '../../../../shared/routes/api_routes.dart';
+import '../../../../shared/constants/app_constants.dart';
 import '../models/animal_model.dart';
+import '../../services/models/pets_response_model.dart';
 import 'animals_repository_interface.dart';
 
 class AnimalsApiRepository implements AnimalsRepositoryInterface {
   final http.Client _client;
+  final String? token;
 
-  AnimalsApiRepository({http.Client? client})
+  AnimalsApiRepository({http.Client? client, this.token})
     : _client = client ?? http.Client();
 
   @override
-  Future<List<AnimalModel>> getAnimals() async {
+  Future<List<AnimalModel>> getAnimals({int page = 1, int perPage = 10}) async {
     try {
-      // For demonstration purposes, return sample data
-      // In production, this would make an actual API call
-      return [
-        AnimalModel(
-          id: '1',
-          name: 'لولو',
-          type: 'قطة',
-          breed: 'شيرازي',
-          age: '2',
-          weight: '4.5',
-          imageUrl:
-              'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=150&h=150&fit=crop&crop=face',
-          createdAt: DateTime.now().subtract(const Duration(days: 30)),
-          updatedAt: DateTime.now(),
-        ),
-        AnimalModel(
-          id: '2',
-          name: 'نجم',
-          type: 'حصان',
-          breed: 'كحيلان',
-          age: '5',
-          weight: '450',
-          imageUrl:
-              'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=150&h=150&fit=crop&crop=face',
-          createdAt: DateTime.now().subtract(const Duration(days: 90)),
-          updatedAt: DateTime.now(),
-        ),
-      ];
+      // Get token from parameter or AppConstants
 
-      // Uncomment below for actual API call
-      /*
-      final response = await _client.get(
-        Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.animals}'),
-        headers: {
-          'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': 'Bearer $token',
+      final uri = Uri.parse('${ApiRoutes.baseUrlApi}${ApiRoutes.pets}').replace(
+        queryParameters: {
+          'page': page.toString(),
+          'per_page': perPage.toString(),
         },
       );
-
+      log(uri.toString());
+      final response = await _client.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      log(response.body.toString());
       if (response.statusCode == 200) {
-        final List<dynamic> jsonData = json.decode(response.body);
-        return jsonData.map((json) => AnimalModel.fromJson(json)).toList();
+        final Map<String, dynamic> jsonData = json.decode(response.body);
+        final petsResponse = PetsResponse.fromJson(jsonData);
+
+        // Convert PetModel to AnimalModel
+        return petsResponse.data.items
+            .map(
+              (pet) => AnimalModel(
+                id: pet.id.toString(),
+                name: pet.name,
+                type: pet.type,
+                breed: pet.breed,
+                age: pet.age.toString(),
+                weight: pet.weight.toString(),
+                imageUrl: pet.imageUrl,
+                createdAt: pet.createdAt,
+                updatedAt: pet.updatedAt,
+              ),
+            )
+            .toList();
       } else {
         throw Exception('Failed to load animals: ${response.statusCode}');
       }
-      */
     } catch (e) {
       throw Exception('Error loading animals: $e');
     }
   }
 
   @override
-  Future<AnimalModel> addAnimal(AnimalModel animal) async {
+  Future<PetsResponse> getPets({int page = 1, int perPage = 10}) async {
     try {
-      final response = await _client.post(
-        Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.animals}'),
+      // Get token from parameter or AppConstants
+      final authToken = token ?? AppConstants.token;
+
+      final uri = Uri.parse('${ApiRoutes.baseUrlApi}${ApiRoutes.pets}').replace(
+        queryParameters: {
+          'page': page.toString(),
+          'per_page': perPage.toString(),
+        },
+      );
+
+      final response = await _client.get(
+        uri,
         headers: {
           'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $authToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonData = json.decode(response.body);
+        return PetsResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Failed to load pets: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error loading pets: $e');
+    }
+  }
+
+  @override
+  Future<AnimalModel> addAnimal(AnimalModel animal) async {
+    try {
+      // Get token from parameter or AppConstants
+      final authToken = token ?? AppConstants.token;
+
+      final response = await _client.post(
+        Uri.parse('${ApiRoutes.baseUrlApi}${ApiRoutes.animals}'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $authToken',
         },
         body: json.encode(animal.toJson()),
       );
@@ -91,12 +122,14 @@ class AnimalsApiRepository implements AnimalsRepositoryInterface {
   @override
   Future<AnimalModel> updateAnimal(AnimalModel animal) async {
     try {
+      // Get token from parameter or AppConstants
+      final authToken = token ?? AppConstants.token;
+
       final response = await _client.put(
-        Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.animals}/${animal.id}'),
+        Uri.parse('${ApiRoutes.baseUrlApi}${ApiRoutes.animals}/${animal.id}'),
         headers: {
           'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $authToken',
         },
         body: json.encode(animal.toJson()),
       );
@@ -114,12 +147,14 @@ class AnimalsApiRepository implements AnimalsRepositoryInterface {
   @override
   Future<void> deleteAnimal(String animalId) async {
     try {
+      // Get token from parameter or AppConstants
+      final authToken = token ?? AppConstants.token;
+
       final response = await _client.delete(
-        Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.animals}/$animalId'),
+        Uri.parse('${ApiRoutes.baseUrlApi}${ApiRoutes.animals}/$animalId'),
         headers: {
           'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $authToken',
         },
       );
 

@@ -9,11 +9,21 @@ import 'package:flutter/material.dart' as materail;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
+
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
-
+  HttpOverrides.global = MyHttpOverrides();
   runApp(
     EasyLocalization(
       supportedLocales: [Locale('en'), Locale('ar')],

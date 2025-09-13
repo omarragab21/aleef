@@ -11,7 +11,6 @@ class AddAddressScreen extends StatefulWidget {
 }
 
 class _AddAddressScreenState extends State<AddAddressScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _buildingNameController = TextEditingController();
   final _apartmentNumberController = TextEditingController();
   final _floorController = TextEditingController();
@@ -54,207 +53,57 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Building Name
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _buildingNameController,
-                decoration: InputDecoration(
-                  hintText: 'building_name'.tr(),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    borderSide: const BorderSide(color: _greyB0B0B0),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    borderSide: const BorderSide(color: _greyB0B0B0),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    borderSide: const BorderSide(
-                      color: AppColor.primary,
-                      width: 2,
-                    ),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Building Name
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _buildingNameController,
+              decoration: InputDecoration(
+                hintText: 'building_name'.tr(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: const BorderSide(color: _greyB0B0B0),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: const BorderSide(color: _greyB0B0B0),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: const BorderSide(
+                    color: AppColor.primary,
+                    width: 2,
                   ),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'required_field'.tr();
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 16),
-
-              // Apartment and Floor Row
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _apartmentNumberController,
-                      decoration: InputDecoration(
-                        hintText: 'apartment_number'.tr(),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: const BorderSide(color: _greyB0B0B0),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: const BorderSide(color: _greyB0B0B0),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: const BorderSide(
-                            color: Colors.green,
-                            width: 2,
-                          ),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'required_field'.tr();
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _floorController,
-                      decoration: InputDecoration(
-                        hintText: 'floor_optional'.tr(),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: const BorderSide(color: _greyB0B0B0),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: const BorderSide(color: _greyB0B0B0),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: const BorderSide(
-                            color: Colors.green,
-                            width: 2,
-                          ),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // Street
-              TextFormField(
-                controller: _streetController,
-                decoration: InputDecoration(
-                  hintText: 'street'.tr(),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    borderSide: const BorderSide(color: _greyB0B0B0),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    borderSide: const BorderSide(color: _greyB0B0B0),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    borderSide: const BorderSide(color: Colors.green, width: 2),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'required_field'.tr();
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 16),
-
-              // Mobile Phone Number
-              CustomPhoneInput(
-                controller: _phoneController,
-                borderColor: _greyB0B0B0,
-                arrowColor: AppColor.primary,
-                onInputChanged: (value) {},
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'required_field'.tr();
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Distinctive Mark
-              TextFormField(
-                controller: _distinctiveMarkController,
-                decoration: InputDecoration(
-                  hintText: 'distinctive_mark_optional'.tr(),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: _greyB0B0B0),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: _greyB0B0B0),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Colors.green, width: 2),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
                 ),
               ),
+            ),
 
-              const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-              // Address Name
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextFormField(
-                    controller: _addressNameController,
+            // Apartment and Floor Row
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _apartmentNumberController,
                     decoration: InputDecoration(
-                      hintText: 'address_name_optional'.tr(),
+                      hintText: 'apartment_number'.tr(),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(15),
                         borderSide: const BorderSide(color: _greyB0B0B0),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(15),
                         borderSide: const BorderSide(color: _greyB0B0B0),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(15),
                         borderSide: const BorderSide(
                           color: Colors.green,
                           width: 2,
@@ -266,72 +115,240 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'address_naming_instruction'.tr(),
-                      style: const TextStyle(
-                        fontFamily: 'Cairo',
-                        fontWeight: FontWeight.w500,
-
-                        fontStyle: FontStyle.normal,
-                        fontSize: 13,
-                        height: 1.0, // 100% line height
-                        letterSpacing: 0.0,
-                        color: Color(0xFF7A7A7A),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextFormField(
+                    controller: _floorController,
+                    decoration: InputDecoration(
+                      hintText: 'floor_optional'.tr(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: const BorderSide(color: _greyB0B0B0),
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ],
-              ),
-
-              const Spacer(),
-
-              // Save Address Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _saveAddress,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColor.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    'save_address'.tr(),
-                    style: const TextStyle(
-                      fontFamily: 'Cairo',
-                      fontWeight: FontWeight.w700,
-                      fontStyle: FontStyle.normal,
-                      fontSize: 20,
-                      height: 1.0, // 100% line height
-                      letterSpacing: 0.0,
-                      color: Colors.white,
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: const BorderSide(color: _greyB0B0B0),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: const BorderSide(
+                          color: Colors.green,
+                          width: 2,
+                        ),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                     ),
                   ),
                 ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Street
+            TextFormField(
+              controller: _streetController,
+              decoration: InputDecoration(
+                hintText: 'street'.tr(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: const BorderSide(color: _greyB0B0B0),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: const BorderSide(color: _greyB0B0B0),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: const BorderSide(color: Colors.green, width: 2),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
               ),
-              const Spacer(),
-            ],
-          ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Mobile Phone Number
+            CustomPhoneInput(
+              controller: _phoneController,
+              borderColor: _greyB0B0B0,
+              arrowColor: AppColor.primary,
+              onInputChanged: (value) {},
+            ),
+            const SizedBox(height: 16),
+
+            // Distinctive Mark
+            TextFormField(
+              controller: _distinctiveMarkController,
+              decoration: InputDecoration(
+                hintText: 'distinctive_mark_optional'.tr(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _greyB0B0B0),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _greyB0B0B0),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.green, width: 2),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Address Name
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextFormField(
+                  controller: _addressNameController,
+                  decoration: InputDecoration(
+                    hintText: 'address_name_optional'.tr(),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _greyB0B0B0),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _greyB0B0B0),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Colors.green,
+                        width: 2,
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    'address_naming_instruction'.tr(),
+                    style: const TextStyle(
+                      fontFamily: 'Cairo',
+                      fontWeight: FontWeight.w500,
+
+                      fontStyle: FontStyle.normal,
+                      fontSize: 13,
+                      height: 1.0, // 100% line height
+                      letterSpacing: 0.0,
+                      color: Color(0xFF7A7A7A),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+
+            const Spacer(),
+
+            // Save Address Button
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: _saveAddress,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColor.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  'save_address'.tr(),
+                  style: const TextStyle(
+                    fontFamily: 'Cairo',
+                    fontWeight: FontWeight.w700,
+                    fontStyle: FontStyle.normal,
+                    fontSize: 20,
+                    height: 1.0, // 100% line height
+                    letterSpacing: 0.0,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+            const Spacer(),
+          ],
         ),
       ),
     );
   }
 
   void _saveAddress() {
-    if (_formKey.currentState!.validate()) {
-      // TODO: Implement address saving logic
+    // Manual validation
+    String buildingName = _buildingNameController.text.trim();
+    String apartmentNumber = _apartmentNumberController.text.trim();
+    String street = _streetController.text.trim();
+    String phone = _phoneController.text.trim();
+
+    if (buildingName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('success'.tr()), backgroundColor: Colors.green),
+        SnackBar(
+          content: Text('required_field'.tr()),
+          backgroundColor: Colors.red,
+        ),
       );
-      Navigator.of(context).pop();
+      return;
     }
+
+    if (apartmentNumber.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('required_field'.tr()),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (street.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('required_field'.tr()),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (phone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('required_field'.tr()),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // All validations passed, proceed with saving
+    // TODO: Implement address saving logic
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('success'.tr()), backgroundColor: Colors.green),
+    );
+    Navigator.of(context).pop();
   }
 }

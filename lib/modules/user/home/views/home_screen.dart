@@ -1,8 +1,14 @@
+import 'package:aleef/modules/user/services/models/pet_model.dart';
+import 'package:aleef/modules/user/services/models/doctor_model.dart';
+import 'package:aleef/modules/user/services/views/store_screens/product_screen.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import '../view_models/home_view_model.dart';
+import '../../services/view_models/services_view_model.dart';
+import '../../profile/view_models/profile_view_model.dart';
 import '../../../../shared/assets/app_color.dart';
 import '../../../../shared/assets/app_text_styles.dart';
 import '../../../../shared/widgets/app_drawer.dart';
@@ -63,11 +69,19 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header Section
-                _buildHeader(),
+                Consumer<ProfileViewModel>(
+                  builder: (context, profileViewModel, child) {
+                    return _buildHeader(profileViewModel);
+                  },
+                ),
                 const SizedBox(height: 24),
 
                 // Pet Profiles Section
-                _buildPetProfiles(),
+                Consumer<ServicesViewModel>(
+                  builder: (context, servicesViewModel, child) {
+                    return _buildPetProfiles(servicesViewModel.pets);
+                  },
+                ),
                 const SizedBox(height: 24),
 
                 // Pet Profile Details Card
@@ -88,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(ProfileViewModel profileViewModel) {
     return Row(
       children: [
         // Bell Icon
@@ -114,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Text(
-                    'أهلاً, أحمد',
+                    'أهلاً, ${profileViewModel.profile?.fullName ?? 'أحمد'}',
                     style: AppTextStyles.titleLarge.copyWith(
                       color: AppColor.title,
                       fontWeight: FontWeight.bold,
@@ -161,7 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildPetProfiles() {
+  Widget _buildPetProfiles(List<PetModel> pets) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -175,8 +189,10 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 16),
         SizedBox(
           height: 120,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.max,
             children: [
               // Add New Pet Button
               Container(
@@ -201,27 +217,46 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
+              if (pets.isEmpty)
+                Expanded(
+                  child: Container(
+                    height: 90,
+                    alignment: Alignment.center,
+                    margin: const EdgeInsets.only(bottom: 16),
+
+                    child: Text('no_pets_available'.tr()),
+                  ),
+                )
+              else if (pets.isNotEmpty)
+                ...pets.map(
+                  (pet) => _buildPetProfileItem(
+                    pet.name ?? '',
+                    pet.imageUrl ?? '',
+                    Colors.grey,
+                  ),
+                ),
 
               // Pet Profile 1 - Fish
-              _buildPetProfileItem(
-                'فقاعة',
-                'assets/images/png/cat.jpg', // Using existing image as placeholder
-                Colors.blue,
-              ),
+              // _buildPetProfileItem(
+              // // _buildPetProfileItem(
+              // //   'فقاعة',
+              // //   'assets/images/png/cat.jpg', // Using existing image as placeholder
+              // //   Colors.blue,
+              // // ),
 
-              // Pet Profile 2 - Dog
-              _buildPetProfileItem(
-                'أوسكار',
-                'assets/images/png/cat.jpg', // Using existing image as placeholder
-                Colors.brown,
-              ),
+              // // Pet Profile 2 - Dog
+              // //    _buildPetProfileItem(
+              //   'أوسكار',
+              // //   'assets/images/png/cat.jpg', // Using existing image as placeholder
+              // //   Colors.brown,
+              // // ),
 
-              // Pet Profile 3 - Cat
-              _buildPetProfileItem(
-                'لولو',
-                'assets/images/png/cat.jpg', // Using existing image as placeholder
-                Colors.grey,
-              ),
+              // // Pet Profile 3 - Cat
+              // _buildPetProfileItem(
+              //   'لولو',
+              //   'assets/images/png/cat.jpg', // Using existing image as placeholder
+              //   Colors.grey,
+              // ),
             ],
           ),
         ),
@@ -262,244 +297,304 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildPetProfileCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColor.secondary,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            'ملف حيوانك الأليف',
-            style: AppTextStyles.titleMedium.copyWith(
-              color: AppColor.title,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Row(
-            children: [
-              // Pet Image
-              Container(
-                width: 90,
-                height: 90,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  shape: BoxShape.circle,
-                  image: const DecorationImage(
-                    image: AssetImage('assets/images/png/cat.jpg'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              const Spacer(),
+    return Selector<ServicesViewModel, List<PetModel>>(
+      selector: (_, vm) => vm.pets,
+      shouldRebuild: (prev, next) => !identical(prev, next),
+      builder: (context, pets, child) {
+        final PetModel? pet = pets.isNotEmpty ? pets.first : null;
 
-              // Pet Details
-              Expanded(
-                flex: 2,
+        return pet != null
+            ? Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColor.secondary,
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    Text(
+                      'ملف حيوانك الأليف',
+                      style: AppTextStyles.titleMedium.copyWith(
+                        color: AppColor.title,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        const Icon(
-                          Icons.pets,
-                          color: AppColor.primary,
-                          size: 20,
+                        // Pet Image
+                        Container(
+                          width: 90,
+                          height: 90,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            shape: BoxShape.circle,
+                            image:
+                                pet?.imageUrl == null ||
+                                    (pet?.imageUrl?.isEmpty ?? true)
+                                ? const DecorationImage(
+                                    image: AssetImage(
+                                      'assets/images/png/cat.jpg',
+                                    ),
+                                    fit: BoxFit.cover,
+                                  )
+                                : DecorationImage(
+                                    image: NetworkImage(pet!.imageUrl!),
+                                    fit: BoxFit.cover,
+                                  ),
+                          ),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'لولو',
-                          style: AppTextStyles.titleSmall.copyWith(
-                            color: AppColor.title,
-                            fontWeight: FontWeight.bold,
+                        const Spacer(),
+
+                        // Pet Details
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  const Icon(
+                                    Icons.pets,
+                                    color: AppColor.primary,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    pet?.name ?? 'غير مُسَمّى',
+                                    style: AppTextStyles.titleSmall.copyWith(
+                                      color: AppColor.title,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                pet == null
+                                    ? 'لا يوجد حيوان أليف محدد'
+                                    : '${pet.type ?? 'نوع غير معروف'} - ${pet.breed ?? 'سلالة غير معروفة'}',
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColor.title.withOpacity(0.8),
+                                ),
+                                textAlign: TextAlign.end,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                pet == null
+                                    ? ''
+                                    : 'العمر: ${pet.age ?? 'غير محدد'}',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColor.title.withOpacity(0.7),
+                                ),
+                                textAlign: TextAlign.end,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                pet == null
+                                    ? ''
+                                    : 'الوزن: ${pet.weight ?? 'غير محدد'}',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColor.title.withOpacity(0.7),
+                                ),
+                                textAlign: TextAlign.end,
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'قطة - شيرازي',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColor.title.withOpacity(0.8),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'أخر تطعيم : 5 مايو 2025',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColor.title.withOpacity(0.7),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'نوع التطعيم : ضد الديدان',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColor.title.withOpacity(0.7),
+                    const SizedBox(height: 16),
+
+                    // View Full Profile Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          // Navigate to full profile
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColor.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        icon: const Icon(Icons.pets, size: 20),
+                        label: Text(
+                          'عرض الملف الكامل',
+                          style: AppTextStyles.labelMedium.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // View Full Profile Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                // Navigate to full profile
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColor.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              icon: const Icon(Icons.pets, size: 20),
-              label: Text(
-                'عرض الملف الكامل',
-                style: AppTextStyles.labelMedium.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+              )
+            : const SizedBox.shrink();
+      },
     );
   }
 
   Widget _buildStorePromotionCard() {
-    return Container(
-      height: 145.h,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ProductScreen()),
+        );
+      },
+      child: Container(
+        height: 145.h,
 
-      decoration: BoxDecoration(
-        color: AppColor.secondary,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Stack(
-        alignment: Alignment.centerLeft,
-        children: [
-          // Promotion Text Card (with padding to the left for the image)
-          Positioned(
-            top: 40.h,
-            right: 5,
-            child: SizedBox(
-              width: 40.w,
-              height: 40.h,
-              child: SvgPicture.asset(
-                'assets/images/svg/group.svg',
+        decoration: BoxDecoration(
+          color: AppColor.secondary,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Stack(
+          alignment: Alignment.centerLeft,
+          children: [
+            // Promotion Text Card (with padding to the left for the image)
+            Positioned(
+              top: 40.h,
+              right: 10,
+              child: SizedBox(
                 width: 40.w,
                 height: 40.h,
+                child: SvgPicture.asset(
+                  'assets/images/svg/group.svg',
+                  width: 40.w,
+                  height: 40.h,
+                ),
               ),
             ),
-          ),
-          Container(
-            margin: const EdgeInsets.only(left: 25),
-            padding: const EdgeInsets.only(left: 36, right: 16),
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              children: [
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'كل المستلزمات اللي محتاجها حيوانك الأليف موجودة في متجرنا',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColor.title,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Dog Image (on top, left)
-          Positioned(
-            left: -20,
-            bottom: 0,
-            child: Container(
-              width: 120,
-              height: 120,
+            Container(
+              margin: const EdgeInsets.only(left: 25),
+              padding: const EdgeInsets.only(left: 36, right: 18),
               decoration: BoxDecoration(
-                image: const DecorationImage(
-                  image: AssetImage('assets/images/png/dog_annoucment.png'),
-                  fit: BoxFit.cover,
-                ),
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVeterinarianSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            GestureDetector(
-              onTap: () {
-                // Navigate to full list
-              },
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.arrow_back_ios,
-                    color: Colors.black,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 2),
-                  Text(
-                    'عرض القائمة',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w500,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'كل المستلزمات اللي محتاجها حيوانك الأليف موجودة في متجرنا',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColor.title,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            const Spacer(),
-            Text(
-              'احجز مع طبيب بيطري',
-              style: AppTextStyles.titleMedium.copyWith(
-                color: AppColor.title,
-                fontWeight: FontWeight.bold,
+            // Dog Image (on top, left)
+            Positioned(
+              left: -20,
+              bottom: 0,
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  image: const DecorationImage(
+                    image: AssetImage('assets/images/png/dog_annoucment.png'),
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
-
-        SizedBox(
-          height: 175.h,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: 3,
-            itemBuilder: (context, index) {
-              return _buildVeterinarianCard();
-            },
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildVeterinarianCard() {
+  Widget _buildVeterinarianSection() {
+    return Consumer<ServicesViewModel>(
+      builder: (context, servicesViewModel, child) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    // Navigate to full list
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.arrow_back_ios,
+                        color: Colors.black,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        'عرض القائمة',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  'احجز مع طبيب بيطري',
+                  style: AppTextStyles.titleMedium.copyWith(
+                    color: AppColor.title,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            if (servicesViewModel.isLoadingDoctors)
+              const Center(
+                child: CircularProgressIndicator(color: AppColor.primary),
+              )
+            else if (servicesViewModel.doctorsError != null)
+              Text(
+                servicesViewModel.doctorsError ?? 'حدث خطأ غير متوقع',
+                style: AppTextStyles.bodyMedium.copyWith(color: Colors.red),
+              )
+            else if (servicesViewModel.doctors.isEmpty)
+              Text(
+                'لا يوجد أطباء متاحون الآن',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColor.title,
+                  fontWeight: FontWeight.w500,
+                ),
+              )
+            else
+              SizedBox(
+                height: 175.h,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: servicesViewModel.doctors.length,
+                  itemBuilder: (context, index) {
+                    final DoctorModel doctor = servicesViewModel.doctors[index];
+                    return _buildVeterinarianCard(doctor);
+                  },
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildVeterinarianCard(DoctorModel doctor) {
     return Container(
       width: 150.w,
       height: 175.h,
@@ -520,17 +615,22 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               color: Colors.grey[300],
               shape: BoxShape.circle,
-              image: const DecorationImage(
-                image: AssetImage('assets/images/png/cat.jpg'),
-                fit: BoxFit.cover,
-              ),
+              image: doctor.image == null
+                  ? const DecorationImage(
+                      image: AssetImage('assets/images/png/cat.jpg'),
+                      fit: BoxFit.cover,
+                    )
+                  : DecorationImage(
+                      image: NetworkImage(doctor.image!),
+                      fit: BoxFit.cover,
+                    ),
             ),
           ),
           const SizedBox(height: 8),
 
           // Doctor Name
           Text(
-            'د. محمد أحمد',
+            doctor.name,
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColor.title,
               fontWeight: FontWeight.w600,
@@ -546,7 +646,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const Icon(Icons.star, color: Colors.amber, size: 16),
               const SizedBox(width: 4),
               Text(
-                '5.0',
+                (doctor.rating ?? 0).toStringAsFixed(1),
                 style: AppTextStyles.bodySmall.copyWith(
                   color: AppColor.title,
                   fontWeight: FontWeight.w500,
@@ -562,7 +662,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               const SizedBox(width: 4),
               Text(
-                'سعر الحجز : 200 ج.م',
+                'سعر الحجز :${doctor.price ?? 0} ريال',
                 style: AppTextStyles.bodySmall.copyWith(
                   color: Colors.black,
                   fontWeight: FontWeight.w500,

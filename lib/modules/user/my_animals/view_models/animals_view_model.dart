@@ -1,10 +1,13 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import '../models/animal_model.dart';
 import '../repository/animals_repository_interface.dart';
+import '../../services/models/pets_response_model.dart';
 
 class AnimalsViewModel extends ChangeNotifier {
   final AnimalsRepositoryInterface _repository;
-  
+
   AnimalsViewModel(this._repository);
 
   bool _isLoading = false;
@@ -13,17 +16,43 @@ class AnimalsViewModel extends ChangeNotifier {
   List<AnimalModel> _animals = [];
   List<AnimalModel> get animals => _animals;
 
+  PetsResponse? _petsResponse;
+  PetsResponse? get petsResponse => _petsResponse;
+
+  int _currentPage = 1;
+  int get currentPage => _currentPage;
+
   String? _error;
   String? get error => _error;
 
-  Future<void> loadAnimals() async {
+  Future<void> loadAnimals({int page = 1, int perPage = 10}) async {
     try {
       _isLoading = true;
       _error = null;
       notifyListeners();
 
-      _animals = await _repository.getAnimals();
-      
+      _animals = await _repository.getAnimals(page: page, perPage: perPage);
+      log('AnimalsViewModel - Animals: ${_animals}');
+      _currentPage = page;
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadPets({int page = 1, int perPage = 10}) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      _petsResponse = await _repository.getPets(page: page, perPage: perPage);
+      _currentPage = page;
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -41,7 +70,7 @@ class AnimalsViewModel extends ChangeNotifier {
 
       final newAnimal = await _repository.addAnimal(animal);
       _animals.add(newAnimal);
-      
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -62,7 +91,7 @@ class AnimalsViewModel extends ChangeNotifier {
       if (index != -1) {
         _animals[index] = updatedAnimal;
       }
-      
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -80,7 +109,7 @@ class AnimalsViewModel extends ChangeNotifier {
 
       await _repository.deleteAnimal(animalId);
       _animals.removeWhere((animal) => animal.id == animalId);
-      
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -94,4 +123,4 @@ class AnimalsViewModel extends ChangeNotifier {
     _error = null;
     notifyListeners();
   }
-} 
+}

@@ -16,7 +16,6 @@ class CustomPhoneInput extends StatefulWidget {
   final String? hintText;
   final TextEditingController? controller;
   final bool isEnabled;
-  final String? Function(String?)? validator;
   final Color? borderColor;
   final Color? arrowColor;
   final double? width;
@@ -30,7 +29,6 @@ class CustomPhoneInput extends StatefulWidget {
     this.hintText,
     this.controller,
     this.isEnabled = true,
-    this.validator,
     this.borderColor,
     this.arrowColor,
     this.width,
@@ -169,7 +167,7 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
           ),
           // Phone number input
           Expanded(
-            child: TextField(
+            child: TextFormField(
               controller: _phoneController,
               enabled: widget.isEnabled,
               keyboardType: TextInputType.phone,

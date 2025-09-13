@@ -1,6 +1,15 @@
+import 'dart:developer';
+
+import 'package:aleef/modules/auth/view_models/auth_view_model.dart';
 import 'package:aleef/modules/user/home/views/home_screen.dart';
+import 'package:aleef/modules/user/my_animals/view_models/animals_view_model.dart';
 import 'package:aleef/modules/user/my_animals/views/animals_screen.dart';
+import 'package:aleef/modules/user/profile/view_models/profile_view_model.dart';
+import 'package:aleef/modules/user/profile/views/edit_profile_screen.dart';
+import 'package:aleef/modules/user/profile/views/profile_screen.dart';
+import 'package:aleef/modules/user/services/view_models/services_view_model.dart';
 import 'package:aleef/modules/user/services/views/services_screen.dart';
+import 'package:aleef/shared/routes/navigation_routes.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/material.dart' as material;
@@ -20,13 +29,13 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0; // Home is selected
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   List<Widget> _pages = [
     HomeScreen(),
     ServicesScreen(),
     AnimalsScreen(),
-    SizedBox(),
-    SizedBox(),
+    const SizedBox(),
   ];
   @override
   void initState() {
@@ -34,12 +43,19 @@ class _MainScreenState extends State<MainScreen> {
     // Load main data when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MainViewModel>().loadMainData();
+      //context.read<ServicesViewModel>().getPetsData();
+      context.read<ServicesViewModel>().getDoctors();
+      context.read<ServicesViewModel>().getProducts();
+      context.read<ProfileViewModel>().loadProfile();
+      context.read<AnimalsViewModel>().loadAnimals();
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    log(context.read<AuthViewModel>().token.toString());
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: Colors.white,
       body: Directionality(
         textDirection: material.TextDirection.ltr,
@@ -81,9 +97,13 @@ class _MainScreenState extends State<MainScreen> {
     final isSelected = _selectedIndex == index;
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _selectedIndex = index;
-        });
+        if (index == 3) {
+          NavigationService().pushWidget(EditProfileScreen());
+        } else {
+          setState(() {
+            _selectedIndex = index;
+          });
+        }
       },
       child: Column(
         mainAxisSize: MainAxisSize.min,

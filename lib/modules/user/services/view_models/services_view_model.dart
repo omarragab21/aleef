@@ -1,83 +1,253 @@
 import 'package:flutter/material.dart';
-import '../models/service_model.dart';
+import '../models/doctor_model.dart';
+import '../models/product_model.dart';
+import '../models/category_model.dart';
 import '../repository/services_repository_interface.dart';
+import '../repository/animal_repo.dart';
+import '../models/pet_model.dart';
 
 class ServicesViewModel extends ChangeNotifier {
   final ServicesRepositoryInterface _repository;
-  
-  ServicesViewModel(this._repository);
+  final AnimalRepo _animalRepo;
 
-  bool _isLoading = false;
-  bool get isLoading => _isLoading;
+  ServicesViewModel(this._repository, this._animalRepo);
 
-  List<ServiceModel> _services = [];
-  List<ServiceModel> get services => _services;
+  List<PetModel> _pets = [];
+  List<PetModel> get pets => _pets;
 
-  String? _selectedCategory;
-  String? get selectedCategory => _selectedCategory;
+  List<DoctorModel> _doctors = [];
+  List<DoctorModel> get doctors => _doctors;
 
-  String? _error;
-  String? get error => _error;
+  bool _isLoadingDoctors = false;
+  bool get isLoadingDoctors => _isLoadingDoctors;
 
-  Future<void> loadServices({String? category}) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      _selectedCategory = category;
-      notifyListeners();
+  String? _doctorsError;
+  String? get doctorsError => _doctorsError;
 
-      _services = await _repository.getServices(category: category);
-      
-      _isLoading = false;
-      notifyListeners();
-    } catch (e) {
-      _isLoading = false;
-      _error = e.toString();
-      notifyListeners();
-    }
-  }
+  List<ProductModel> _products = [];
+  List<ProductModel> get products => _products;
 
-  Future<void> searchServices(String query) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
+  bool _isLoadingProducts = false;
+  bool get isLoadingProducts => _isLoadingProducts;
 
-      _services = await _repository.searchServices(query);
-      
-      _isLoading = false;
-      notifyListeners();
-    } catch (e) {
-      _isLoading = false;
-      _error = e.toString();
-      notifyListeners();
-    }
-  }
+  String? _productsError;
+  String? get productsError => _productsError;
 
-  Future<void> bookService(String serviceId) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
+  List<CategoryModel> _categories = [];
+  List<CategoryModel> get categories => _categories;
 
-      await _repository.bookService(serviceId);
-      
-      _isLoading = false;
-      notifyListeners();
-    } catch (e) {
-      _isLoading = false;
-      _error = e.toString();
-      notifyListeners();
-    }
-  }
+  bool _isLoadingCategories = false;
+  bool get isLoadingCategories => _isLoadingCategories;
 
-  void clearError() {
-    _error = null;
+  String? _categoriesError;
+  String? get categoriesError => _categoriesError;
+
+  List<ProductModel> _categoryProducts = [];
+  List<ProductModel> get categoryProducts => _categoryProducts;
+
+  bool _isLoadingCategoryProducts = false;
+  bool get isLoadingCategoryProducts => _isLoadingCategoryProducts;
+
+  String? _categoryProductsError;
+  String? get categoryProductsError => _categoryProductsError;
+
+  String _searchQuery = '';
+  String get searchQuery => _searchQuery;
+
+  double? _minPrice;
+  double? get minPrice => _minPrice;
+
+  double? _maxPrice;
+  double? get maxPrice => _maxPrice;
+
+  Future<void> getPetsData() async {
+    final pets = await _animalRepo.getPets();
+    print(pets);
+    _pets = pets.data.items;
     notifyListeners();
   }
 
-  void clearCategory() {
-    _selectedCategory = null;
+  Future<void> getDoctors({
+    int page = 1,
+    int perPage = 10,
+    int? governorateId,
+    int? specialtyId,
+    String type = 'normal',
+  }) async {
+    _isLoadingDoctors = true;
+    _doctorsError = null;
     notifyListeners();
+
+    try {
+      final doctorsResponse = await _repository.getDoctors(
+        page: page,
+        perPage: perPage,
+        governorateId: governorateId,
+        specialtyId: specialtyId,
+        type: type,
+      );
+
+      _doctors = doctorsResponse.data.items;
+      _doctorsError = null;
+    } catch (e) {
+      _doctorsError = e.toString();
+      _doctors = [];
+    } finally {
+      _isLoadingDoctors = false;
+      notifyListeners();
+    }
   }
-} 
+
+  Future<void> getProducts({
+    int page = 1,
+    int perPage = 10,
+    String? search,
+    double? minPrice,
+    double? maxPrice,
+  }) async {
+    _isLoadingProducts = true;
+    _productsError = null;
+    notifyListeners();
+
+    try {
+      final productsResponse = await _repository.getProducts(
+        page: page,
+        perPage: perPage,
+        search: search,
+        minPrice: minPrice,
+        maxPrice: maxPrice,
+      );
+
+      _products = productsResponse.data;
+      _productsError = null;
+    } catch (e) {
+      _productsError = e.toString();
+      _products = [];
+    } finally {
+      _isLoadingProducts = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> searchProducts(String query) async {
+    _searchQuery = query;
+    if (query.isEmpty) {
+      // If search is empty, get all products
+      await getProducts();
+    } else {
+      // Search with the query
+      await getProducts(search: query);
+    }
+  }
+
+  Future<void> clearSearch() async {
+    _searchQuery = '';
+    await getProducts();
+  }
+
+  Future<void> applyPriceFilter({double? minPrice, double? maxPrice}) async {
+    _minPrice = minPrice;
+    _maxPrice = maxPrice;
+    await getProducts(
+      search: _searchQuery.isNotEmpty ? _searchQuery : null,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+    );
+  }
+
+  Future<void> clearPriceFilter() async {
+    _minPrice = null;
+    _maxPrice = null;
+    await getProducts(search: _searchQuery.isNotEmpty ? _searchQuery : null);
+  }
+
+  Future<void> getCategoryProducts({
+    int page = 1,
+    int perPage = 10,
+    required int categoryId,
+    String? search,
+    double? minPrice,
+    double? maxPrice,
+  }) async {
+    _isLoadingCategoryProducts = true;
+    _categoryProductsError = null;
+    notifyListeners();
+
+    try {
+      final productsResponse = await _repository.getProducts(
+        page: page,
+        perPage: perPage,
+        categoryId: categoryId,
+        search: search,
+        minPrice: minPrice,
+        maxPrice: maxPrice,
+      );
+
+      _categoryProducts = productsResponse.data;
+      _categoryProductsError = null;
+    } catch (e) {
+      _categoryProductsError = e.toString();
+      _categoryProducts = [];
+    } finally {
+      _isLoadingCategoryProducts = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> searchCategoryProducts(String query, int categoryId) async {
+    _searchQuery = query;
+    if (query.isEmpty) {
+      // If search is empty, get all category products
+      await getCategoryProducts(categoryId: categoryId);
+    } else {
+      // Search with the query
+      await getCategoryProducts(categoryId: categoryId, search: query);
+    }
+  }
+
+  Future<void> applyCategoryPriceFilter({
+    required int categoryId,
+    double? minPrice,
+    double? maxPrice,
+  }) async {
+    _minPrice = minPrice;
+    _maxPrice = maxPrice;
+    await getCategoryProducts(
+      categoryId: categoryId,
+      search: _searchQuery.isNotEmpty ? _searchQuery : null,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+    );
+  }
+
+  Future<void> clearCategoryPriceFilter(int categoryId) async {
+    _minPrice = null;
+    _maxPrice = null;
+    await getCategoryProducts(
+      categoryId: categoryId,
+      search: _searchQuery.isNotEmpty ? _searchQuery : null,
+    );
+  }
+
+  Future<void> getCategories({int page = 1, int perPage = 10}) async {
+    _isLoadingCategories = true;
+    _categoriesError = null;
+    notifyListeners();
+
+    try {
+      final categoriesResponse = await _repository.getCategories(
+        page: page,
+        perPage: perPage,
+      );
+
+      _categories = categoriesResponse.data.items;
+      _categoriesError = null;
+    } catch (e) {
+      _categoriesError = e.toString();
+      _categories = [];
+    } finally {
+      _isLoadingCategories = false;
+      notifyListeners();
+    }
+  }
+}
