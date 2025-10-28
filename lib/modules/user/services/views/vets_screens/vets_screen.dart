@@ -4,8 +4,11 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:provider/provider.dart';
 import '../../../../../shared/assets/app_color.dart';
 import '../../../../../shared/assets/app_text_styles.dart';
+import '../../view_models/services_view_model.dart';
+import '../../models/doctor_model.dart';
 
 class VetsScreen extends StatefulWidget {
   const VetsScreen({super.key});
@@ -17,26 +20,47 @@ class VetsScreen extends StatefulWidget {
 class _VetsScreenState extends State<VetsScreen> {
   bool isExaminationSelected =
       true; // true for "كشف" (Examination), false for "أونلاين" (Online)
+  DoctorModel? selectedDoctor;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Load doctors when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ServicesViewModel>().getDoctors(type: 'normal');
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Header Section
-            _buildHeader(),
+        child: Consumer<ServicesViewModel>(
+          builder: (context, servicesViewModel, child) {
+            return Column(
+              children: [
+                // Header Section
+                _buildHeader(),
 
-            // Toggle Section
-            _buildToggleSection(),
+                // Toggle Section
+                _buildToggleSection(servicesViewModel),
 
-            // Search Section
-            _buildSearchSection(),
+                // Search Section
+                _buildSearchSection(servicesViewModel),
 
-            // Doctors List
-            Expanded(child: _buildDoctorsList()),
-          ],
+                // Doctors List
+                Expanded(child: _buildDoctorsList(servicesViewModel)),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -69,7 +93,7 @@ class _VetsScreenState extends State<VetsScreen> {
     );
   }
 
-  Widget _buildToggleSection() {
+  Widget _buildToggleSection(ServicesViewModel servicesViewModel) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
@@ -81,7 +105,10 @@ class _VetsScreenState extends State<VetsScreen> {
         children: [
           Expanded(
             child: GestureDetector(
-              onTap: () => setState(() => isExaminationSelected = true),
+              onTap: () {
+                setState(() => isExaminationSelected = true);
+                servicesViewModel.getDoctors(type: 'normal');
+              },
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
@@ -108,7 +135,10 @@ class _VetsScreenState extends State<VetsScreen> {
           ),
           Expanded(
             child: GestureDetector(
-              onTap: () => setState(() => isExaminationSelected = false),
+              onTap: () {
+                setState(() => isExaminationSelected = false);
+                servicesViewModel.getDoctors(type: 'online');
+              },
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
@@ -138,7 +168,7 @@ class _VetsScreenState extends State<VetsScreen> {
     );
   }
 
-  Widget _buildSearchSection() {
+  Widget _buildSearchSection(ServicesViewModel servicesViewModel) {
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -154,6 +184,18 @@ class _VetsScreenState extends State<VetsScreen> {
           ),
           Expanded(
             child: TextField(
+              controller: _searchController,
+              onChanged: (value) {
+                // Implement search functionality
+                if (value.isEmpty) {
+                  servicesViewModel.getDoctors(
+                    type: isExaminationSelected ? 'normal' : 'online',
+                  );
+                } else {
+                  // You can implement search logic here
+                  // For now, we'll just filter locally
+                }
+              },
               decoration: InputDecoration(
                 hintText: 'search_for_vet'.tr(),
                 hintStyle: const TextStyle(
@@ -175,7 +217,6 @@ class _VetsScreenState extends State<VetsScreen> {
             padding: const EdgeInsets.all(12),
             child: SvgPicture.asset(
               'assets/images/svg/fliter_icon.svg',
-
               width: 20,
               height: 20,
             ),
@@ -185,179 +226,261 @@ class _VetsScreenState extends State<VetsScreen> {
     );
   }
 
-  Widget _buildDoctorsList() {
-    return ListView(
+  Widget _buildDoctorsList(ServicesViewModel servicesViewModel) {
+    if (servicesViewModel.isLoadingDoctors) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColor.primary),
+      );
+    }
+
+    if (servicesViewModel.doctorsError != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Error: ${servicesViewModel.doctorsError}',
+              style: const TextStyle(color: Colors.red),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => servicesViewModel.getDoctors(
+                type: isExaminationSelected ? 'normal' : 'online',
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (servicesViewModel.doctors.isEmpty) {
+      return Center(
+        child: Text(
+          'no_doctors_found'.tr(),
+          style: AppTextStyles.bodyLarge.copyWith(color: AppColor.title),
+        ),
+      );
+    }
+
+    return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      children: [
-        _buildDoctorCard(
-          name: 'د. محمد أحمد',
-          specialization: 'الطب البيطري العام - 10 سنين خبرة',
-          animalTypes: 'التخصص الحيواني : قطط, كلاب',
-          rating: '5.0',
-          reviews: '100',
-          price: '2',
-          imageUrl: 'assets/images/png/vet_person.jpg',
-        ),
-        const SizedBox(height: 16),
-        _buildDoctorCard(
-          name: 'د. محمد أحمد',
-          specialization: 'الطب السلوكي - 7 سنين خبرة',
-          animalTypes: 'التخصص الحيواني : قطط, كلاب, طيور',
-          rating: '5.0',
-          reviews: '100',
-          price: '5',
-          imageUrl: 'assets/images/png/vet_person.jpg',
-        ),
-      ],
+      itemCount: servicesViewModel.doctors.length,
+      itemBuilder: (context, index) {
+        final doctor = servicesViewModel.doctors[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: _buildDoctorCard(
+            doctor: doctor,
+            isSelected: selectedDoctor?.id == doctor.id,
+            onTap: () {
+              setState(() {
+                selectedDoctor = doctor;
+              });
+            },
+          ),
+        );
+      },
     );
   }
 
   Widget _buildDoctorCard({
-    required String name,
-    required String specialization,
-    required String animalTypes,
-    required String rating,
-    required String reviews,
-    required String price,
-    required String imageUrl,
+    required DoctorModel doctor,
+    required bool isSelected,
+    required VoidCallback onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF6F1E9),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Color(0xFF6D9773), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Doctor Info Row
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CircleAvatar(radius: 30, backgroundImage: AssetImage(imageUrl)),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(height: 10),
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontFamily: 'Cairo',
-                      fontWeight: FontWeight.w700,
-                      fontStyle: FontStyle.normal,
-                      fontSize: 20,
-                      height: 1.0,
-                      letterSpacing: 0,
-                      color: Color(0xFF2D2D2D),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    specialization,
-                    style: const TextStyle(
-                      fontFamily: 'Cairo',
-                      fontWeight: FontWeight.w500,
-                      fontStyle: FontStyle.normal,
-                      fontSize: 15,
-                      height: 1.0,
-                      letterSpacing: 0,
-                      color: Color(0xFF2D2D2D),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    animalTypes,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColor.title,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColor.lightGreen : const Color(0xFFF6F1E9),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? AppColor.primary : Color(0xFF6D9773),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Doctor Info Row
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundImage:
+                      doctor.image != null && doctor.image!.isNotEmpty
+                      ? NetworkImage(doctor.image!)
+                      : const AssetImage('assets/images/png/vet_person.jpg')
+                            as ImageProvider,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      SizedBox(height: 10),
                       Text(
-                        "($reviews) ${'reviews'.tr()}",
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColor.title,
+                        doctor.name,
+                        style: const TextStyle(
+                          fontFamily: 'Cairo',
+                          fontWeight: FontWeight.w700,
+                          fontStyle: FontStyle.normal,
+                          fontSize: 20,
+                          height: 1.0,
+                          letterSpacing: 0,
+                          color: Color(0xFF2D2D2D),
                         ),
                       ),
-                      const SizedBox(width: 4),
-
-                      Text(
-                        rating,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColor.title,
-                        ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text(
+                            doctor.specialty.map((e) => e.name).join(', '),
+                            style: const TextStyle(
+                              fontFamily: 'Cairo',
+                              fontWeight: FontWeight.w500,
+                              fontStyle: FontStyle.normal,
+                              fontSize: 15,
+                              height: 1.0,
+                              letterSpacing: 0,
+                              color: Color(0xFF2D2D2D),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '- ${doctor.experience != null ? doctor.experience! : 0} سنين خبرة',
+                            style: const TextStyle(
+                              fontFamily: 'Cairo',
+                              fontWeight: FontWeight.w500,
+                              fontStyle: FontStyle.normal,
+                              fontSize: 15,
+                              height: 1.0,
+                              letterSpacing: 0,
+                              color: Color(0xFF2D2D2D),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '- ${doctor.spaceString}',
+                            style: const TextStyle(
+                              fontFamily: 'Cairo',
+                              fontWeight: FontWeight.w500,
+                              fontStyle: FontStyle.normal,
+                              fontSize: 15,
+                              height: 1.0,
+                              letterSpacing: 0,
+                              color: Color(0xFF2D2D2D),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 4),
-                      Icon(Icons.star, color: Colors.amber, size: 16),
+                      if (doctor.description != null &&
+                          doctor.description!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          doctor.description!,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColor.title,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          if (doctor.rating > 0) ...[
+                            Text(
+                              doctor.rating.toString(),
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColor.title,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(Icons.star, color: Colors.amber, size: 16),
+                            const SizedBox(width: 8),
+                          ],
+                          Text(
+                            '(${doctor.totalReviews}) ${'reviews'.tr()}',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColor.title,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      if (doctor.price > 0)
+                        Text(
+                          'السعر : ${doctor.priceString} ريال',
+                          style: const TextStyle(
+                            fontFamily: 'Cairo',
+                            fontWeight: FontWeight.w500,
+                            fontStyle: FontStyle.normal,
+                            fontSize: 15,
+                            height: 1.0,
+                            letterSpacing: 0,
+                            color: Color(0xFF2D2D2D),
+                          ),
+                        ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'السعر : $price ريال',
-                    style: const TextStyle(
-                      fontFamily: 'Cairo',
-                      fontWeight: FontWeight.w500,
-                      fontStyle: FontStyle.normal,
-                      fontSize: 15,
-                      height: 1.0,
-                      letterSpacing: 0,
-                      color: Color(0xFF2D2D2D),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Service Buttons
-          Row(
-            children: [
-              Expanded(child: _buildServiceButton('العناية')),
-              const SizedBox(width: 8),
-              Expanded(child: _buildServiceButton('العلاج')),
-              const SizedBox(width: 8),
-              Expanded(child: _buildServiceButton('كشف أونلاين')),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // Book Appointment Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                // Handle booking appointment
-                NavigationService().pushWidget(VetDetailsScreen());
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColor.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
                 ),
-                elevation: 0,
-              ),
-              child: Text(
-                'حجز موعد',
-                style: const TextStyle(
-                  fontFamily: 'Cairo',
-                  fontWeight: FontWeight.w700,
-                  fontStyle: FontStyle.normal,
-                  fontSize: 20,
-                  height: 1.0,
-                  letterSpacing: 0,
-                  color: Colors.white,
+                if (isSelected)
+                  Icon(Icons.check_circle, color: AppColor.primary, size: 24),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Service Buttons
+            Row(
+              children: [
+                Expanded(child: _buildServiceButton('العناية')),
+                const SizedBox(width: 8),
+                Expanded(child: _buildServiceButton('العلاج')),
+                const SizedBox(width: 8),
+                Expanded(child: _buildServiceButton('كشف أونلاين')),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // Book Appointment Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  // Handle booking appointment with selected doctor
+                  NavigationService().pushWidget(
+                    VetDetailsScreen(doctor: doctor),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColor.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  'حجز موعد',
+                  style: const TextStyle(
+                    fontFamily: 'Cairo',
+                    fontWeight: FontWeight.w700,
+                    fontStyle: FontStyle.normal,
+                    fontSize: 20,
+                    height: 1.0,
+                    letterSpacing: 0,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -385,59 +508,6 @@ class _VetsScreenState extends State<VetsScreen> {
           textAlign: TextAlign.center,
         ),
       ),
-    );
-  }
-
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(Icons.home, 'الرئيسية', true),
-              _buildNavItem(Icons.grid_view, 'الخدمات', false),
-              _buildNavItem(Icons.pets, 'حيواناتي', false),
-              _buildNavItem(Icons.person, 'حسابي', false),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, bool isActive) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          color: isActive ? AppColor.primary : AppColor.lightGray,
-          size: 24,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: AppTextStyles.bodySmall.copyWith(
-            color: isActive ? AppColor.primary : AppColor.lightGray,
-          ),
-        ),
-      ],
     );
   }
 }

@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:aleef/shared/assets/app_color.dart';
 import 'package:aleef/shared/assets/app_text_styles.dart';
 import 'package:aleef/modules/user/services/models/appointment_model.dart';
+import 'package:aleef/modules/user/profile/models/reservation_model.dart';
+import 'package:aleef/modules/user/profile/view_models/profile_view_model.dart';
+import 'package:aleef/shared/routes/navigation_routes.dart';
+import 'package:aleef/modules/user/services/views/vets_screens/confrim_reservation.dart';
+import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class MyAppointmentsScreen extends StatefulWidget {
   const MyAppointmentsScreen({super.key});
@@ -11,42 +17,13 @@ class MyAppointmentsScreen extends StatefulWidget {
 }
 
 class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
-  List<AppointmentModel> appointments = [];
-
   @override
   void initState() {
     super.initState();
-    _loadAppointments();
-  }
-
-  void _loadAppointments() {
-    // Mock data based on the UI design
-    appointments = [
-      AppointmentModel(
-        id: '1',
-        doctorName: 'د. محمد أحمد',
-        doctorSpecialty: 'استشاري الطب البيطري',
-        doctorImageUrl:
-            'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face',
-        appointmentDate: DateTime.now(),
-        appointmentTime: '05:00 م',
-        consultationType: 'كشف أونلاين',
-        consultationPrice: 2.0,
-        status: 'active',
-      ),
-      AppointmentModel(
-        id: '2',
-        doctorName: 'د. محمد أحمد',
-        doctorSpecialty: 'استشاري الطب البيطري',
-        doctorImageUrl:
-            'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face',
-        appointmentDate: DateTime.now(),
-        appointmentTime: '05:00 م',
-        consultationType: 'كشف أونلاين',
-        consultationPrice: 2.0,
-        status: 'completed',
-      ),
-    ];
+    // Load reservations when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProfileViewModel>().getReservations(type: 'current');
+    });
   }
 
   @override
@@ -60,7 +37,25 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
             _buildHeader(),
 
             // Appointments List
-            Expanded(child: _buildAppointmentsList()),
+            Expanded(
+              child: Consumer<ProfileViewModel>(
+                builder: (context, viewModel, child) {
+                  if (viewModel.isLoadingReservations) {
+                    return _buildLoadingState();
+                  }
+
+                  if (viewModel.reservationsError != null) {
+                    return _buildErrorState(viewModel.reservationsError!);
+                  }
+
+                  if (viewModel.reservations.isEmpty) {
+                    return _buildEmptyState();
+                  }
+
+                  return _buildAppointmentsList(viewModel.reservations);
+                },
+              ),
+            ),
           ],
         ),
       ),
@@ -92,21 +87,21 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
     );
   }
 
-  Widget _buildAppointmentsList() {
+  Widget _buildAppointmentsList(List<ProfileReservationModel> reservations) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: appointments.length,
+      itemCount: reservations.length,
       itemBuilder: (context, index) {
-        final appointment = appointments[index];
+        final reservation = reservations[index];
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
-          child: _buildAppointmentCard(appointment, index),
+          child: _buildAppointmentCard(reservation, index),
         );
       },
     );
   }
 
-  Widget _buildAppointmentCard(AppointmentModel appointment, int index) {
+  Widget _buildAppointmentCard(ProfileReservationModel reservation, int index) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -126,8 +121,9 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
                 height: 80,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  image: DecorationImage(
-                    image: NetworkImage(appointment.doctorImageUrl ?? ''),
+                  color: AppColor.primary.withOpacity(0.1),
+                  image: const DecorationImage(
+                    image: AssetImage('assets/images/png/vet_person.jpg'),
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -141,7 +137,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
                   children: [
                     const SizedBox(height: 15),
                     Text(
-                      appointment.doctorName ?? '',
+                      reservation.doctor.name,
                       style: AppTextStyles.titleMedium.copyWith(
                         color: AppColor.title,
                         fontWeight: FontWeight.bold,
@@ -149,7 +145,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      appointment.doctorSpecialty ?? '',
+                      'طبيب بيطري', // Default specialty since it's not in the API response
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: AppColor.title,
                       ),
@@ -158,21 +154,37 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
                     _buildAppointmentDetail(
                       icon: Icons.calendar_today,
                       text:
-                          '${appointment.formattedDate} ${appointment.appointmentTime}',
+                          '${reservation.reservationDate} ${reservation.reservationTime}',
                     ),
 
                     const SizedBox(height: 4),
 
                     _buildAppointmentDetail(
                       icon: Icons.phone,
-                      text: appointment.consultationType ?? '',
+                      text: reservation.type == 'online'
+                          ? 'كشف أونلاين'
+                          : 'زيارة منزلية',
                     ),
 
                     const SizedBox(height: 4),
 
                     _buildAppointmentDetail(
                       icon: Icons.attach_money,
-                      text: 'سعر الكشف: ${appointment.consultationPrice} ريال',
+                      text: 'سعر الكشف: ${reservation.price} ريال',
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    _buildAppointmentDetail(
+                      icon: Icons.pets,
+                      text: 'الحيوان: ${reservation.pet.name}',
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    _buildAppointmentDetail(
+                      icon: Icons.info,
+                      text: 'الحالة: ${reservation.status}',
                     ),
                   ],
                 ),
@@ -190,7 +202,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
                 child: _buildActionButton(
                   icon: Icons.headset_mic,
                   text: 'الدعم',
-                  onTap: () => _handleSupportTap(appointment),
+                  onTap: () => _handleSupportTap(reservation),
                 ),
               ),
 
@@ -202,8 +214,8 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
                   icon: index == 0 ? Icons.edit : Icons.refresh,
                   text: index == 0 ? 'تعديل' : 'إعادة الحجز',
                   onTap: () => index == 0
-                      ? _handleEditTap(appointment)
-                      : _handleRebookTap(appointment),
+                      ? _handleEditTap(reservation)
+                      : _handleRebookTap(reservation),
                 ),
               ),
             ],
@@ -262,77 +274,59 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
     );
   }
 
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
+  Widget _buildLoadingState() {
+    return const Center(child: CircularProgressIndicator());
+  }
+
+  Widget _buildErrorState(String error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            'حدث خطأ في تحميل الحجوزات',
+            style: AppTextStyles.titleMedium.copyWith(color: AppColor.title),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            error,
+            style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[600]),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              context.read<ProfileViewModel>().getReservations(type: 'current');
+            },
+            child: Text('إعادة المحاولة'),
           ),
         ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildNavItem(
-                icon: Icons.home,
-                label: 'الرئيسية',
-                isSelected: false,
-                onTap: () {},
-              ),
-              _buildNavItem(
-                icon: Icons.grid_view,
-                label: 'الخدمات',
-                isSelected: false,
-                onTap: () {},
-              ),
-              _buildNavItem(
-                icon: Icons.pets,
-                label: 'حيواناتي',
-                isSelected: false,
-                onTap: () {},
-              ),
-              _buildNavItem(
-                icon: Icons.person,
-                label: 'حسابي',
-                isSelected: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
 
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
+  Widget _buildEmptyState() {
+    return Center(
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            icon,
-            color: isSelected ? AppColor.primary : AppColor.lightGray,
-            size: 24,
+            Icons.calendar_today_outlined,
+            size: 64,
+            color: Colors.grey[400],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 16),
           Text(
-            label,
-            style: AppTextStyles.labelSmall.copyWith(
-              color: isSelected ? AppColor.primary : AppColor.lightGray,
-            ),
+            'no_reservations_found'.tr(),
+            style: AppTextStyles.titleMedium.copyWith(color: AppColor.title),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'لا توجد حجوزات متاحة حالياً',
+            style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey[600]),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -340,18 +334,35 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
   }
 
   // Action Handlers
-  void _handleSupportTap(AppointmentModel appointment) {
+  void _handleSupportTap(ProfileReservationModel reservation) {
     // TODO: Implement support functionality
-    print('Support tapped for appointment: ${appointment.id}');
+    print('Support tapped for reservation: ${reservation.id}');
   }
 
-  void _handleEditTap(AppointmentModel appointment) {
+  void _handleEditTap(ProfileReservationModel reservation) {
     // TODO: Implement edit functionality
-    print('Edit tapped for appointment: ${appointment.id}');
+    print('Edit tapped for reservation: ${reservation.id}');
   }
 
-  void _handleRebookTap(AppointmentModel appointment) {
-    // TODO: Implement rebook functionality
-    print('Rebook tapped for appointment: ${appointment.id}');
+  void _handleRebookTap(ProfileReservationModel reservation) {
+    // Convert ProfileReservationModel to AppointmentModel for ConfrimReservation
+    final appointment = AppointmentModel(
+      id: reservation.id.toString(),
+      doctorName: reservation.doctor.name,
+      doctorSpecialty: 'طبيب بيطري',
+      doctorImageUrl: null,
+      appointmentDate:
+          DateTime.tryParse(reservation.reservationDate) ?? DateTime.now(),
+      appointmentTime: reservation.reservationTime,
+      consultationType: reservation.type == 'online'
+          ? 'كشف أونلاين'
+          : 'زيارة منزلية',
+      consultationPrice: double.tryParse(reservation.price) ?? 0.0,
+      status: reservation.status.toLowerCase(),
+    );
+
+    NavigationService().pushWidget(
+      ConfrimReservation(myAppointment: appointment),
+    );
   }
 }

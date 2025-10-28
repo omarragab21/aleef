@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:io';
 import 'package:dio/dio.dart';
 import '../../../../shared/routes/api_routes.dart';
 import '../../../../shared/constants/app_constants.dart';
 import '../models/profile_model.dart';
 import '../models/profile_response_model.dart';
+import '../models/reservation_model.dart';
+import '../models/address_model.dart';
 import 'profile_repository_interface.dart';
 
 class ProfileApiRepository implements ProfileRepositoryInterface {
@@ -89,56 +90,22 @@ class ProfileApiRepository implements ProfileRepositoryInterface {
       // Get token from AppConstants if not provided
       final authToken = token ?? AppConstants.token;
 
-      // Build FormData for multipart request
-      final formData = FormData();
+      // Convert profile to JSON, excluding avatar field
+      Map<String, dynamic> profileJson = profile.toJson();
+      profileJson.remove('avatar'); // Remove avatar from JSON body
 
-      // Add all available text fields
-      if (profile.firstName != null && profile.firstName!.isNotEmpty) {
-        formData.fields.add(MapEntry('first_name', profile.firstName!));
-      }
-      if (profile.lastName != null && profile.lastName!.isNotEmpty) {
-        formData.fields.add(MapEntry('last_name', profile.lastName!));
-      }
-      if (profile.phone != null && profile.phone!.isNotEmpty) {
-        formData.fields.add(MapEntry('phone', profile.phone!));
-      }
-      if (profile.email != null && profile.email!.isNotEmpty) {
-        formData.fields.add(MapEntry('email', profile.email!));
-      }
-      if (profile.gender != null && profile.gender!.isNotEmpty) {
-        formData.fields.add(MapEntry('gender', profile.gender!));
-      }
-      if (profile.address != null && profile.address!.isNotEmpty) {
-        formData.fields.add(MapEntry('address', profile.address!));
-      }
-      if (profile.city != null && profile.city!.isNotEmpty) {
-        formData.fields.add(MapEntry('city', profile.city!));
-      }
-      if (profile.country != null && profile.country!.isNotEmpty) {
-        formData.fields.add(MapEntry('country', profile.country!));
-      }
-      if (profile.dateOfBirth != null) {
-        formData.fields.add(
-          MapEntry('date_of_birth', profile.dateOfBirth!.toIso8601String()),
-        );
-      }
-
-      // Optional avatar file (if avatar contains a local file path)
-      if (profile.avatar != null && profile.avatar!.isNotEmpty) {
-        final filePath = profile.avatar!;
-        final file = File(filePath);
-        if (await file.exists()) {
-          formData.files.add(
-            MapEntry('avatar', await MultipartFile.fromFile(filePath)),
-          );
-        }
-      }
-      log('formData: $formData');
+      log('profileJson: $profileJson');
       log('${ApiRoutes.baseUrlApi}${ApiRoutes.profile}');
       final response = await _dio.put(
         'https://aleef.meetsyourneed.com/api/profile',
-        data: formData,
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
+        data: profileJson,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $authToken',
+            'Accept': 'application/json',
+          },
+        ),
       );
 
       log('response: ${response.data}');
@@ -306,6 +273,158 @@ class ProfileApiRepository implements ProfileRepositoryInterface {
     } catch (e) {
       log('error: $e');
       throw Exception('Error logging out: $e');
+    }
+  }
+
+  @override
+  Future<ProfileReservationsResponse> getReservations({
+    String type = 'current',
+  }) async {
+    try {
+      final response = await _dio.get(
+        '${ApiRoutes.baseUrlApi}/profile/reservations',
+        queryParameters: {'type': type},
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      log('Get reservations response status: ${response.statusCode}');
+      log('Get reservations response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = response.data;
+        return ProfileReservationsResponse.fromJson(data);
+      } else {
+        final Map<String, dynamic> errorData = response.data;
+        throw Exception(
+          'Failed to get reservations: ${errorData['message'] ?? 'HTTP ${response.statusCode}'}',
+        );
+      }
+    } catch (e) {
+      log('Error getting reservations: $e');
+      throw Exception('Error getting reservations: $e');
+    }
+  }
+
+  @override
+  Future<AddressApiResponse> getAddresses() async {
+    try {
+      final response = await _dio.get(
+        '${ApiRoutes.baseUrlApi}${ApiRoutes.addresses}',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      log('Get addresses response status: ${response.statusCode}');
+      log('Get addresses response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = response.data;
+        return AddressApiResponse.fromJson(data);
+      } else {
+        final Map<String, dynamic> errorData = response.data;
+        throw Exception(
+          'Failed to get addresses: ${errorData['message'] ?? 'HTTP ${response.statusCode}'}',
+        );
+      }
+    } catch (e) {
+      log('Error getting addresses: $e');
+      throw Exception('Error getting addresses: $e');
+    }
+  }
+
+  @override
+  Future<AddressModel> createAddress({
+    required int governorateId,
+    required String state,
+    required String address,
+    required String phone,
+    String? name,
+    String? building,
+    String? floor,
+    String? apartment,
+    String? landmark,
+    bool isDefault = false,
+  }) async {
+    try {
+      // Get token from AppConstants if not provided
+      final authToken = token ?? AppConstants.token;
+
+      // Create JSON body
+      final Map<String, dynamic> addressData = {
+        'governorate_id': governorateId,
+        'state': state,
+        'address': address,
+        'phone': phone,
+        'is_default': isDefault,
+      };
+
+      // Add optional fields only if they have values
+      if (name != null && name.isNotEmpty) {
+        addressData['name'] = name;
+      }
+      if (building != null && building.isNotEmpty) {
+        addressData['building'] = building;
+      }
+      if (floor != null && floor.isNotEmpty) {
+        addressData['floor'] = floor;
+      }
+      if (apartment != null && apartment.isNotEmpty) {
+        addressData['apartment'] = apartment;
+      }
+      if (landmark != null && landmark.isNotEmpty) {
+        addressData['landmark'] = landmark;
+      }
+
+      log('Creating address with data: $addressData');
+      log('${ApiRoutes.baseUrlApi}${ApiRoutes.addresses}');
+
+      final response = await _dio.post(
+        '${ApiRoutes.baseUrlApi}${ApiRoutes.addresses}',
+        data: addressData,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      log('Create address response status: ${response.statusCode}');
+      log('Create address response data: ${response.data}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> responseData = response.data;
+
+        // Check if response has the expected structure
+        if (responseData['status'] == 'success' &&
+            responseData['data'] != null) {
+          return AddressModel.fromJson(responseData['data']);
+        } else {
+          throw Exception(
+            'API returned error: ${responseData['message'] ?? 'Unknown error'}',
+          );
+        }
+      } else {
+        final Map<String, dynamic> errorData = response.data;
+        throw Exception(
+          'Failed to create address: ${errorData['message'] ?? 'HTTP ${response.statusCode}'}',
+        );
+      }
+    } catch (e) {
+      log('Error creating address: $e');
+      throw Exception('Error creating address: $e');
     }
   }
 }

@@ -31,6 +31,7 @@ abstract final class ApiRoutes {
   // Profile Routes
   static const String profile = '/profile';
   static const String profileAvatar = '/profile/avatar';
+  static const String addresses = '/addresses';
 
   // Governorates Routes
   static const String governorates = '/governorates';

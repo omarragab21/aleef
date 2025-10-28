@@ -1,7 +1,10 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import '../models/doctor_model.dart';
 import '../models/product_model.dart';
 import '../models/category_model.dart';
+import '../models/appointment_model.dart';
 import '../repository/services_repository_interface.dart';
 import '../repository/animal_repo.dart';
 import '../models/pet_model.dart';
@@ -50,6 +53,20 @@ class ServicesViewModel extends ChangeNotifier {
 
   String? _categoryProductsError;
   String? get categoryProductsError => _categoryProductsError;
+
+  // Available Appointments
+  List<AvailableAppointmentModel> _availableAppointments = [];
+  List<AvailableAppointmentModel> get availableAppointments =>
+      _availableAppointments;
+
+  bool _isLoadingAppointments = false;
+  bool get isLoadingAppointments => _isLoadingAppointments;
+
+  String? _appointmentsError;
+  String? get appointmentsError => _appointmentsError;
+
+  int? _selectedDoctorId;
+  int? get selectedDoctorId => _selectedDoctorId;
 
   String _searchQuery = '';
   String get searchQuery => _searchQuery;
@@ -249,5 +266,95 @@ class ServicesViewModel extends ChangeNotifier {
       _isLoadingCategories = false;
       notifyListeners();
     }
+  }
+
+  Future<void> getAvailableAppointments({
+    required int doctorId,
+    int page = 1,
+    int perPage = 10,
+  }) async {
+    _isLoadingAppointments = true;
+    _appointmentsError = null;
+    _selectedDoctorId = doctorId;
+    notifyListeners();
+
+    try {
+      final appointmentsResponse = await _repository.getAvailableAppointments(
+        doctorId: doctorId,
+        page: page,
+        perPage: perPage,
+      );
+      log('appointmentsResponse: ${appointmentsResponse.toJson()}');
+
+      _availableAppointments = appointmentsResponse.data.items;
+      _appointmentsError = null;
+    } catch (e) {
+      _appointmentsError = e.toString();
+      _availableAppointments = [];
+    } finally {
+      _isLoadingAppointments = false;
+      notifyListeners();
+    }
+  }
+
+  void clearAppointments() {
+    _availableAppointments = [];
+    _selectedDoctorId = null;
+    _appointmentsError = null;
+    notifyListeners();
+  }
+
+  // Reservation state
+  bool _isCreatingReservation = false;
+  String? _reservationError;
+
+  bool get isCreatingReservation => _isCreatingReservation;
+  String? get reservationError => _reservationError;
+
+  Future<bool> createReservation({
+    required int doctorId,
+    required String reservationDate,
+    required String reservationTime,
+    required String type,
+    required String paymentMethod,
+    required int userPetId,
+  }) async {
+    _isCreatingReservation = true;
+    _reservationError = null;
+    notifyListeners();
+
+    try {
+      final response = await _repository.createReservation(
+        doctorId: doctorId,
+        reservationDate: reservationDate,
+        reservationTime: reservationTime,
+        type: type,
+        paymentMethod: paymentMethod,
+        userPetId: userPetId,
+      );
+
+      _isCreatingReservation = false;
+      notifyListeners();
+
+      // Check if the response indicates success
+      if (response['status'] == 'success') {
+        return true;
+      } else {
+        _reservationError =
+            response['message'] ?? 'Failed to create reservation';
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _isCreatingReservation = false;
+      _reservationError = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  void clearReservationError() {
+    _reservationError = null;
+    notifyListeners();
   }
 }

@@ -557,8 +557,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           country: _profile?.country,
           profileImage: _profile?.profileImage,
           avatar: _profile?.avatar,
-          firstName: _profile?.firstName,
-          lastName: _profile?.lastName,
+          firstName: _fullNameController.text.trim().split(' ')[0],
+          lastName: _fullNameController.text.trim().split(' ')[1],
           createdAt: _profile?.createdAt,
           updatedAt: DateTime.now(),
         );

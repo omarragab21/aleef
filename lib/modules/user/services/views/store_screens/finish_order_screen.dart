@@ -4,6 +4,9 @@ import 'package:aleef/shared/assets/app_color.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import '../../view_models/cart_view_model.dart';
+import '../../../profile/view_models/profile_view_model.dart';
+import '../../../profile/models/address_model.dart';
+import '../../../profile/views/add_address_screen.dart';
 
 class FinishOrderScreen extends StatefulWidget {
   const FinishOrderScreen({super.key});
@@ -15,15 +18,44 @@ class FinishOrderScreen extends StatefulWidget {
 class _FinishOrderScreenState extends State<FinishOrderScreen> {
   String selectedPaymentMethod = 'card1';
   static const double deliveryFee = 5.00;
+  AddressModel? selectedAddress;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAddresses();
+  }
+
+  Future<void> _loadAddresses() async {
+    final profileViewModel = Provider.of<ProfileViewModel>(
+      context,
+      listen: false,
+    );
+    await profileViewModel.getAddresses();
+
+    if (mounted && profileViewModel.addresses.isNotEmpty) {
+      setState(() {
+        selectedAddress =
+            profileViewModel.getDefaultAddress() ??
+            profileViewModel.addresses.first;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<CartViewModel>(
-      builder: (context, cartViewModel, child) {
+    return Consumer2<CartViewModel, ProfileViewModel>(
+      builder: (context, cartViewModel, profileViewModel, child) {
         final subtotal = cartViewModel.totalPrice;
         final total = subtotal + deliveryFee;
 
-        return _buildScaffold(context, cartViewModel, subtotal, total);
+        return _buildScaffold(
+          context,
+          cartViewModel,
+          profileViewModel,
+          subtotal,
+          total,
+        );
       },
     );
   }
@@ -31,6 +63,7 @@ class _FinishOrderScreenState extends State<FinishOrderScreen> {
   Widget _buildScaffold(
     BuildContext context,
     CartViewModel cartViewModel,
+    ProfileViewModel profileViewModel,
     double subtotal,
     double total,
   ) {
@@ -75,14 +108,17 @@ class _FinishOrderScreenState extends State<FinishOrderScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'تغيير',
-                        style: TextStyle(
-                          fontFamily: 'Cairo',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColor.title,
-                          decoration: TextDecoration.underline,
+                      GestureDetector(
+                        onTap: () => _showAddressDialog(profileViewModel),
+                        child: Text(
+                          'تغيير',
+                          style: TextStyle(
+                            fontFamily: 'Cairo',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColor.title,
+                            decoration: TextDecoration.underline,
+                          ),
                         ),
                       ),
                       Icon(
@@ -93,33 +129,47 @@ class _FinishOrderScreenState extends State<FinishOrderScreen> {
                     ],
                   ),
                   SizedBox(height: 8.h),
-                  Text(
-                    'شارع النخيل، مبنى 25، طابق 2، شقة 203, ZAWLIYAH',
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppColor.title,
+                  if (selectedAddress != null) ...[
+                    Text(
+                      selectedAddress!.displayAddress,
+                      style: TextStyle(
+                        fontFamily: 'Cairo',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: AppColor.title,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 4.h),
-                  Text(
-                    'خلف محطة البترول - المدخل يمين',
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 12,
-                      color: AppColor.lightGray,
+                    if (selectedAddress!.landmark != null) ...[
+                      SizedBox(height: 4.h),
+                      Text(
+                        selectedAddress!.landmark!,
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          fontSize: 12,
+                          color: AppColor.lightGray,
+                        ),
+                      ),
+                    ],
+                    SizedBox(height: 8.h),
+                    Text(
+                      'رقم الهاتف المتنقل : ${selectedAddress!.phone ?? ''}',
+                      style: TextStyle(
+                        fontFamily: 'Cairo',
+                        fontSize: 12,
+                        color: AppColor.lightGray,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 8.h),
-                  Text(
-                    'رقم الهاتف المتنقل : 96891234567+',
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 12,
-                      color: AppColor.lightGray,
+                  ] else ...[
+                    Text(
+                      'لا يوجد عنوان محدد',
+                      style: TextStyle(
+                        fontFamily: 'Cairo',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: AppColor.lightGray,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -127,28 +177,31 @@ class _FinishOrderScreenState extends State<FinishOrderScreen> {
             SizedBox(height: 16.h),
 
             // Add Address Button
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(vertical: 16.h),
-              decoration: BoxDecoration(
-                color: AppColor.lightGreen,
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.add, color: Colors.white, size: 20),
-                  SizedBox(width: 8.w),
-                  Text(
-                    'إضافة عنوان',
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+            GestureDetector(
+              onTap: () => _navigateToAddAddress(profileViewModel),
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(vertical: 16.h),
+                decoration: BoxDecoration(
+                  color: AppColor.lightGreen,
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.add, color: Colors.white, size: 20),
+                    SizedBox(width: 8.w),
+                    Text(
+                      'إضافة عنوان',
+                      style: TextStyle(
+                        fontFamily: 'Cairo',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
 
@@ -510,6 +563,142 @@ class _FinishOrderScreenState extends State<FinishOrderScreen> {
         backgroundColor: isError ? Colors.red : AppColor.primary,
         duration: Duration(seconds: 3),
       ),
+    );
+  }
+
+  Future<void> _navigateToAddAddress(ProfileViewModel profileViewModel) async {
+    final result = await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const AddAddressScreen()));
+
+    // Refresh addresses when returning from AddAddressScreen
+    if (result == true || mounted) {
+      await profileViewModel.getAddresses();
+
+      if (mounted && profileViewModel.addresses.isNotEmpty) {
+        setState(() {
+          selectedAddress =
+              profileViewModel.getDefaultAddress() ??
+              profileViewModel.addresses.first;
+        });
+      }
+    }
+  }
+
+  void _showAddressDialog(ProfileViewModel profileViewModel) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'اختر العنوان',
+            style: TextStyle(
+              fontFamily: 'Cairo',
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+            ),
+          ),
+          content: Container(
+            width: double.maxFinite,
+            child: profileViewModel.isLoadingAddresses
+                ? Center(
+                    child: CircularProgressIndicator(color: AppColor.primary),
+                  )
+                : profileViewModel.addresses.isEmpty
+                ? Center(
+                    child: Text(
+                      'لا توجد عناوين متاحة',
+                      style: TextStyle(
+                        fontFamily: 'Cairo',
+                        fontSize: 16,
+                        color: AppColor.lightGray,
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: profileViewModel.addresses.length,
+                    itemBuilder: (context, index) {
+                      final address = profileViewModel.addresses[index];
+                      final isSelected = selectedAddress?.id == address.id;
+
+                      return Container(
+                        margin: EdgeInsets.only(bottom: 8.h),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColor.primary
+                                : Colors.grey.shade300,
+                            width: isSelected ? 2 : 1,
+                          ),
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: ListTile(
+                          title: Text(
+                            address.name ?? 'العنوان ${index + 1}',
+                            style: TextStyle(
+                              fontFamily: 'Cairo',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(height: 4.h),
+                              Text(
+                                address.displayAddress,
+                                style: TextStyle(
+                                  fontFamily: 'Cairo',
+                                  fontSize: 12,
+                                  color: AppColor.lightGray,
+                                ),
+                              ),
+                              if (address.phone != null) ...[
+                                SizedBox(height: 2.h),
+                                Text(
+                                  'الهاتف: ${address.phone}',
+                                  style: TextStyle(
+                                    fontFamily: 'Cairo',
+                                    fontSize: 12,
+                                    color: AppColor.lightGray,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          trailing: isSelected
+                              ? Icon(
+                                  Icons.check_circle,
+                                  color: AppColor.primary,
+                                  size: 24,
+                                )
+                              : null,
+                          onTap: () {
+                            setState(() {
+                              selectedAddress = address;
+                            });
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'إلغاء',
+                style: TextStyle(
+                  fontFamily: 'Cairo',
+                  color: AppColor.lightGray,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

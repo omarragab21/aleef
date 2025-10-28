@@ -1,11 +1,16 @@
 import 'package:aleef/modules/user/services/views/vets_screens/confrim_reservation.dart';
+import 'package:aleef/modules/user/services/models/doctor_model.dart';
+import 'package:aleef/modules/user/services/models/appointment_model.dart';
 import 'package:aleef/shared/assets/app_color.dart';
 import 'package:aleef/shared/routes/navigation_routes.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 class BookAppointmentScreen extends StatefulWidget {
-  const BookAppointmentScreen({super.key});
+  final DoctorModel? doctor;
+  final AvailableAppointmentModel? appointment;
+
+  const BookAppointmentScreen({super.key, this.doctor, this.appointment});
 
   @override
   State<BookAppointmentScreen> createState() => _BookAppointmentScreenState();
@@ -18,22 +23,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   bool isTodayExpanded = true;
   bool isTomorrowExpanded = false;
   bool isPetSelectionExpanded = false;
+  bool isHomeVisitSelected = false; // Default to clinic visit
 
-  final List<String> timeSlots = [
-    '06:00 م',
-    '05:30 م',
-    '05:00 م',
-    '07:30 م',
-    '07:00 م',
-    '06:30 م',
-    '09:30 م',
-    '08:30 م',
-    '08:00 م',
-    '11:00 م',
-    '10:30 م',
-    '10:00 م',
-  ];
-
+  // TODO: Replace with actual pets from user data
   final List<String> pets = ['لولو', 'أوسكار', 'فقاعة'];
 
   @override
@@ -83,37 +75,26 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   }
 
   Widget _buildDateSection() {
+    if (widget.appointment == null) {
+      return Center(
+        child: Text(
+          'no_appointment_data'.tr(),
+          style: TextStyle(color: Colors.grey[600], fontSize: 16),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Today's appointments
+        // Selected appointment date
         _buildDateCard(
-          title: 'اليوم 3 يونيو',
+          title:
+              '${widget.appointment!.day} ${widget.appointment!.dateDisplay}',
           isExpanded: isTodayExpanded,
           isActive: true,
           onTap: () => setState(() => isTodayExpanded = !isTodayExpanded),
           child: isTodayExpanded ? _buildTimeSlots() : null,
-        ),
-
-        SizedBox(height: 12),
-
-        // Tomorrow's appointments
-        _buildDateCard(
-          title: 'غدا 4 يونيو',
-          isExpanded: isTomorrowExpanded,
-          isActive: true,
-          onTap: () => setState(() => isTomorrowExpanded = !isTomorrowExpanded),
-          child: isTomorrowExpanded ? _buildTimeSlots() : null,
-        ),
-
-        SizedBox(height: 12),
-
-        // Thursday's appointments (inactive)
-        _buildDateCard(
-          title: 'الخميس 5 يونيو',
-          isExpanded: false,
-          isActive: false,
-          onTap: null,
         ),
       ],
     );
@@ -200,6 +181,16 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   }
 
   Widget _buildTimeSlots() {
+    if (widget.appointment == null ||
+        widget.appointment!.availableSlots.isEmpty) {
+      return Center(
+        child: Text(
+          'no_time_slots_available'.tr(),
+          style: TextStyle(color: Colors.grey[600], fontSize: 16),
+        ),
+      );
+    }
+
     return GridView.builder(
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
@@ -209,9 +200,10 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         mainAxisSpacing: 10,
         childAspectRatio: 2.9,
       ),
-      itemCount: timeSlots.length,
+      itemCount: widget.appointment!.availableSlots.length,
       itemBuilder: (context, index) {
-        final time = timeSlots[index];
+        final slot = widget.appointment!.availableSlots[index];
+        final time = slot.time;
         final isSelected = selectedTime == time;
 
         return InkWell(
@@ -387,32 +379,51 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   }
 
   Widget _buildConfirmButton() {
+    final isBookingValid = selectedTime != null && selectedPet != null;
+
     return Center(
       child: GestureDetector(
-        onTap: () {
-          // Handle booking confirmation
-          NavigationService().pushWidget(ConfrimReservation());
-        },
+        onTap: isBookingValid
+            ? () {
+                NavigationService().pushWidget(
+                  ConfrimReservation(
+                    doctor: widget.doctor,
+                    appointment: widget.appointment,
+                    selectedTime: selectedTime,
+                    selectedPet: selectedPet,
+                    consultationType: isHomeVisitSelected
+                        ? 'زيارة منزلية'
+                        : 'كشف عيادة',
+                    consultationPrice: widget.doctor?.price,
+                  ),
+                );
+              }
+            : null,
         child: Container(
           width: double.infinity,
           height: 56,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: const Color(0xFF6D9773),
+            color: isBookingValid ? const Color(0xFF6D9773) : Colors.grey[400],
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: const Color(0xFF6D9773), width: 2),
+            border: Border.all(
+              color: isBookingValid
+                  ? const Color(0xFF6D9773)
+                  : Colors.grey[400]!,
+              width: 2,
+            ),
           ),
           alignment: Alignment.center,
           child: Text(
-            'تأكيد الحجز',
-            style: const TextStyle(
+            isBookingValid ? 'تأكيد الحجز' : 'اختر الوقت والحيوان',
+            style: TextStyle(
               fontFamily: 'Cairo',
               fontWeight: FontWeight.w700,
               fontStyle: FontStyle.normal,
               fontSize: 20,
               height: 1.0,
               letterSpacing: 0,
-              color: Colors.white,
+              color: isBookingValid ? Colors.white : Colors.grey[600],
             ),
           ),
         ),
